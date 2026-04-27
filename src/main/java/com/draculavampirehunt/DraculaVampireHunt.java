@@ -14,6 +14,7 @@ import com.draculavampirehunt.managers.EconomyService;
 import com.draculavampirehunt.managers.EventArenaManager;
 import com.draculavampirehunt.managers.EventStatsManager;
 import com.draculavampirehunt.managers.VampireHuntManager;
+import com.draculavampirehunt.managers.VoteManager;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -146,5 +147,9 @@ public class DraculaVampireHunt extends JavaPlugin {
 
     public Economy getVaultEconomy() {
         return vaultEconomy;
+    }
+
+    public VoteManager getVoteManager() {
+        return vampireHuntManager != null ? vampireHuntManager.getVoteManager() : null;
     }
 }
