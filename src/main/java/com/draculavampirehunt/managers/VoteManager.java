@@ -198,7 +198,7 @@ public class VoteManager {
 
         // Winner: most votes; ties broken by enum ordinal (lower = higher priority)
         RoundModifier winner = tally.entrySet().stream()
-                .max(Comparator.<Map.Entry<RoundModifier, Integer>>comparingByValue()
+                .max(Map.Entry.<RoundModifier, Integer>comparingByValue()
                         .thenComparing(e -> -e.getKey().ordinal()))
                 .map(Map.Entry::getKey)
                 .orElse(RoundModifier.NONE);
