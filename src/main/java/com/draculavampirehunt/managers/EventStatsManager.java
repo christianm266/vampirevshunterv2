@@ -130,6 +130,11 @@ public class EventStatsManager {
         return Collections.unmodifiableList(getStats(playerId).getUnlockedTitles());
     }
 
+    /** Returns all UUIDs that have stats recorded (used for leaderboards). */
+    public List<UUID> getAllTrackedPlayers() {
+        return new ArrayList<>(cache.keySet());
+    }
+
     public void incrementEventsPlayed(UUID playerId) {
         PlayerEventStats stats = getStats(playerId);
         stats.setEventsPlayed(stats.getEventsPlayed() + 1);
@@ -268,92 +273,37 @@ public class EventStatsManager {
         private int bestWinStreak;
         private List<String> unlockedTitles = new ArrayList<>();
 
-        public int getWins() {
-            return wins;
-        }
+        public int getWins() { return wins; }
+        public void setWins(int wins) { this.wins = wins; }
 
-        public void setWins(int wins) {
-            this.wins = wins;
-        }
+        public int getLosses() { return losses; }
+        public void setLosses(int losses) { this.losses = losses; }
 
-        public int getLosses() {
-            return losses;
-        }
+        public int getEventsPlayed() { return eventsPlayed; }
+        public void setEventsPlayed(int eventsPlayed) { this.eventsPlayed = eventsPlayed; }
 
-        public void setLosses(int losses) {
-            this.losses = losses;
-        }
+        public int getVampireKills() { return vampireKills; }
+        public void setVampireKills(int vampireKills) { this.vampireKills = vampireKills; }
 
-        public int getEventsPlayed() {
-            return eventsPlayed;
-        }
+        public int getHunterKills() { return hunterKills; }
+        public void setHunterKills(int hunterKills) { this.hunterKills = hunterKills; }
 
-        public void setEventsPlayed(int eventsPlayed) {
-            this.eventsPlayed = eventsPlayed;
-        }
+        public int getInfections() { return infections; }
+        public void setInfections(int infections) { this.infections = infections; }
 
-        public int getVampireKills() {
-            return vampireKills;
-        }
+        public int getVampireWins() { return vampireWins; }
+        public void setVampireWins(int vampireWins) { this.vampireWins = vampireWins; }
 
-        public void setVampireKills(int vampireKills) {
-            this.vampireKills = vampireKills;
-        }
+        public int getHunterWins() { return hunterWins; }
+        public void setHunterWins(int hunterWins) { this.hunterWins = hunterWins; }
 
-        public int getHunterKills() {
-            return hunterKills;
-        }
+        public int getCurrentWinStreak() { return currentWinStreak; }
+        public void setCurrentWinStreak(int currentWinStreak) { this.currentWinStreak = currentWinStreak; }
 
-        public void setHunterKills(int hunterKills) {
-            this.hunterKills = hunterKills;
-        }
+        public int getBestWinStreak() { return bestWinStreak; }
+        public void setBestWinStreak(int bestWinStreak) { this.bestWinStreak = bestWinStreak; }
 
-        public int getInfections() {
-            return infections;
-        }
-
-        public void setInfections(int infections) {
-            this.infections = infections;
-        }
-
-        public int getVampireWins() {
-            return vampireWins;
-        }
-
-        public void setVampireWins(int vampireWins) {
-            this.vampireWins = vampireWins;
-        }
-
-        public int getHunterWins() {
-            return hunterWins;
-        }
-
-        public void setHunterWins(int hunterWins) {
-            this.hunterWins = hunterWins;
-        }
-
-        public int getCurrentWinStreak() {
-            return currentWinStreak;
-        }
-
-        public void setCurrentWinStreak(int currentWinStreak) {
-            this.currentWinStreak = currentWinStreak;
-        }
-
-        public int getBestWinStreak() {
-            return bestWinStreak;
-        }
-
-        public void setBestWinStreak(int bestWinStreak) {
-            this.bestWinStreak = bestWinStreak;
-        }
-
-        public List<String> getUnlockedTitles() {
-            return unlockedTitles;
-        }
-
-        public void setUnlockedTitles(List<String> unlockedTitles) {
-            this.unlockedTitles = unlockedTitles == null ? new ArrayList<>() : unlockedTitles;
-        }
+        public List<String> getUnlockedTitles() { return unlockedTitles; }
+        public void setUnlockedTitles(List<String> unlockedTitles) { this.unlockedTitles = unlockedTitles; }
     }
 }
