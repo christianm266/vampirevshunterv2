@@ -4,8 +4,7 @@ import com.draculavampirehunt.DraculaVampireHunt;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -18,7 +17,7 @@ import java.util.UUID;
  * Current titles (in order of precedence, highest first):
  *   "Apex Predator"  — 50 vampire kills
  *   "Night Stalker"  — 20 vampire kills
- *   "First Blood"    — 1 vampire kill
+ *   "First Blood"    —  1 vampire kill
  *   "Guardian"       — 30 hunter kills
  *   "Vampire Slayer" — 10 hunter kills
  *   "Survivor"       — 10 wins
@@ -26,21 +25,20 @@ import java.util.UUID;
  */
 public class TitleManager {
 
-    /** Ordered map: display name → threshold check (evaluated top to bottom; first match wins). */
     public enum ProgressionTitle {
-        APEX_PREDATOR    ("Apex Predator",    "§4"),
-        NIGHT_STALKER    ("Night Stalker",    "§5"),
-        FIRST_BLOOD      ("First Blood",      "§c"),
-        GUARDIAN         ("Guardian",         "§b"),
-        VAMPIRE_SLAYER   ("Vampire Slayer",   "§e"),
-        SURVIVOR         ("Survivor",         "§a"),
-        VETERAN          ("Veteran",          "§7");
+        APEX_PREDATOR  ("Apex Predator",  "§4"),
+        NIGHT_STALKER  ("Night Stalker",  "§5"),
+        FIRST_BLOOD    ("First Blood",    "§c"),
+        GUARDIAN       ("Guardian",       "§b"),
+        VAMPIRE_SLAYER ("Vampire Slayer", "§e"),
+        SURVIVOR       ("Survivor",       "§a"),
+        VETERAN        ("Veteran",        "§7");
 
         public final String name;
         public final String color;
 
         ProgressionTitle(String name, String color) {
-            this.name = name;
+            this.name  = name;
             this.color = color;
         }
     }
@@ -64,9 +62,14 @@ public class TitleManager {
             return;
         }
 
-        // Only announce on first unlock
-        String key = "title." + earned.name().toLowerCase();
-        if (stats.hasUnlockedTitle(playerId, key)) {
+        // Key stored in the unlocked-titles list
+        String key = earned.name;
+
+        List<String> unlocked = stats.getUnlockedTitles(playerId);
+        boolean alreadyUnlocked = unlocked.stream()
+                .anyMatch(t -> t.equalsIgnoreCase(key));
+
+        if (alreadyUnlocked) {
             // Already unlocked — still show the tag in chat silently
             if (player != null && player.isOnline()) {
                 player.sendMessage("§8[§6Titles§8] §7Your title: " + earned.color + earned.name);
@@ -74,9 +77,15 @@ public class TitleManager {
             return;
         }
 
-        stats.unlockTitle(playerId, key);
+        // Grant via the existing progression system
+        EventStatsManager.PlayerEventStats playerStats = stats.getStats(playerId);
+        java.util.ArrayList<String> newList = new java.util.ArrayList<>(playerStats.getUnlockedTitles());
+        newList.add(earned.name);
+        playerStats.setUnlockedTitles(newList);
+        stats.saveAsync();
 
-        String chatLine = "§8[§6Title Unlocked§8] §f" + (player != null ? player.getName() : playerId.toString())
+        String chatLine = "§8[§6Title Unlocked§8] §f"
+                + (player != null ? player.getName() : playerId.toString())
                 + " §7earned the title §6" + earned.color + "§l" + earned.name + "§6!";
         Bukkit.broadcastMessage(chatLine);
 
@@ -90,18 +99,20 @@ public class TitleManager {
      * Returns the highest earned title for a player, or null if none qualify.
      */
     public ProgressionTitle resolveHighestTitle(UUID playerId, EventStatsManager stats) {
-        int vampireKills  = stats.getVampireKills(playerId);
-        int hunterKills   = stats.getHunterKills(playerId);
-        int wins          = stats.getWins(playerId);
-        int eventsPlayed  = stats.getEventsPlayed(playerId);
+        EventStatsManager.PlayerEventStats s = stats.getStats(playerId);
 
-        if (vampireKills >= 50)  return ProgressionTitle.APEX_PREDATOR;
-        if (vampireKills >= 20)  return ProgressionTitle.NIGHT_STALKER;
-        if (vampireKills >= 1)   return ProgressionTitle.FIRST_BLOOD;
-        if (hunterKills  >= 30)  return ProgressionTitle.GUARDIAN;
-        if (hunterKills  >= 10)  return ProgressionTitle.VAMPIRE_SLAYER;
-        if (wins         >= 10)  return ProgressionTitle.SURVIVOR;
-        if (eventsPlayed >= 25)  return ProgressionTitle.VETERAN;
+        int vampireKills = s.getVampireKills();
+        int hunterKills  = s.getHunterKills();
+        int wins         = s.getWins();
+        int eventsPlayed = s.getEventsPlayed();
+
+        if (vampireKills >= 50) return ProgressionTitle.APEX_PREDATOR;
+        if (vampireKills >= 20) return ProgressionTitle.NIGHT_STALKER;
+        if (vampireKills >= 1)  return ProgressionTitle.FIRST_BLOOD;
+        if (hunterKills  >= 30) return ProgressionTitle.GUARDIAN;
+        if (hunterKills  >= 10) return ProgressionTitle.VAMPIRE_SLAYER;
+        if (wins         >= 10) return ProgressionTitle.SURVIVOR;
+        if (eventsPlayed >= 25) return ProgressionTitle.VETERAN;
 
         return null;
     }
