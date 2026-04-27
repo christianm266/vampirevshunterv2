@@ -26,6 +26,12 @@ public class EventCombatListener implements Listener {
         }
 
         VampireHuntManager manager = plugin.getVampireHuntManager();
+
+        // If no event is running, never interfere with combat — fixes post-match PvP block
+        if (!manager.isEventOngoing()) {
+            return;
+        }
+
         Player attacker = resolveAttacker(event.getDamager());
 
         if (attacker == null) {
