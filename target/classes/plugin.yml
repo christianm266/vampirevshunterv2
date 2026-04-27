@@ -1,0 +1,84 @@
+name: DraculaVampireHunt
+version: 1.0.0
+main: com.draculavampirehunt.DraculaVampireHunt
+api-version: "1.21"
+depend: [Vault]
+
+commands:
+  vhunt:
+    description: Main player command for the Vampire Hunt event
+    usage: /vhunt help
+    aliases: [vampirehunt, bloodhunt, vh]
+    permission: draculavampirehunt.use
+
+  vhadmin:
+    description: Admin command for the Vampire Hunt event
+    usage: /vhadmin help
+    aliases: [vha, vampireadmin]
+    permission: draculavampirehunt.admin
+    permission-message: "§8[§4Vampire Hunt§8] §cYou do not have permission to use admin commands."
+
+permissions:
+  draculavampirehunt.*:
+    description: Grants all DraculaVampireHunt permissions
+    default: op
+    children:
+      draculavampirehunt.use: true
+      draculavampirehunt.admin: true
+      draculavampirehunt.admin.start: true
+      draculavampirehunt.admin.stop: true
+      draculavampirehunt.admin.forcestop: true
+      draculavampirehunt.admin.reload: true
+      draculavampirehunt.admin.arena: true
+      draculavampirehunt.admin.lobby: true
+      draculavampirehunt.admin.rewards: true
+      draculavampirehunt.admin.stats: true
+
+  draculavampirehunt.use:
+    description: Allows players to use basic Vampire Hunt commands
+    default: true
+
+  draculavampirehunt.admin:
+    description: Allows use of admin Vampire Hunt commands
+    default: op
+    children:
+      draculavampirehunt.admin.start: true
+      draculavampirehunt.admin.stop: true
+      draculavampirehunt.admin.forcestop: true
+      draculavampirehunt.admin.reload: true
+      draculavampirehunt.admin.arena: true
+      draculavampirehunt.admin.lobby: true
+      draculavampirehunt.admin.rewards: true
+      draculavampirehunt.admin.stats: true
+
+  draculavampirehunt.admin.start:
+    description: Allows starting Vampire Hunt events
+    default: op
+
+  draculavampirehunt.admin.stop:
+    description: Allows stopping Vampire Hunt events gracefully
+    default: op
+
+  draculavampirehunt.admin.forcestop:
+    description: Allows force-stopping Vampire Hunt events and restoring players
+    default: op
+
+  draculavampirehunt.admin.reload:
+    description: Allows reloading the Vampire Hunt config
+    default: op
+
+  draculavampirehunt.admin.arena:
+    description: Allows setting vampire, hunter, and spectator spawn points
+    default: op
+
+  draculavampirehunt.admin.lobby:
+    description: Allows setting lobby and return spawn points
+    default: op
+
+  draculavampirehunt.admin.rewards:
+    description: Allows managing event rewards
+    default: op
+
+  draculavampirehunt.admin.stats:
+    description: Allows viewing other players' event stats
+    default: op

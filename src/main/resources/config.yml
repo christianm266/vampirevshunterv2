@@ -1,0 +1,315 @@
+event:
+  min-players: 2
+  max-players: 20
+  countdown-seconds: 15
+  duration-seconds: 600
+
+  ready-check:
+    enabled: true
+    timeout-seconds: 25
+
+  win-conditions:
+    vampires-win-on-timeout: false
+    hunters-win-when-all-vampires-dead: true
+    vampires-win-when-all-hunters-converted: true
+
+  blocked-commands:
+    - spawn
+    - home
+    - warp
+    - tpa
+    - tpaccept
+    - tpdeny
+    - rtp
+    - back
+    - kit
+
+  allowed-commands:
+    - vhunt
+    - vampirehunt
+    - bloodhunt
+    - vh
+
+  disable-chorus-fruit: true
+  disable-elytra: true
+  disable-tridents: true
+  disable-natural-regen: true
+
+  friendly-fire:
+    same-role: true
+
+  roles:
+    initial-vampires: 1
+
+  disconnect:
+    grace-enabled: true
+    grace-seconds: 20
+    eliminate-if-not-back: true
+
+  spectator:
+    enabled: true
+    block-teleport-escape: true
+    allowed-commands:
+      - vhunt
+      - vampirehunt
+      - bloodhunt
+      - vh
+
+  rewards:
+    economy:
+      enabled: true
+      amount: 250.0
+
+  tracking:
+    tick-interval: 10
+
+  horror:
+    darkness-pulses:
+      enabled: true
+      seconds: 2
+      amplifier: 0
+      slowness-seconds: 1
+
+    ambient:
+      enabled: true
+      interval-ticks: 100
+      thunder: true
+      bats: true
+
+  progression:
+    titles:
+      night-stalker:
+        enabled: true
+        required-vampire-kills: 15
+      first-blood:
+        enabled: true
+        required-wins: 1
+      hunter-slayer:
+        enabled: true
+        required-hunter-kills: 15
+      last-survivor:
+        enabled: true
+        required-best-win-streak: 3
+
+  classes:
+    vampire-stalker:
+      bonus-invisibility-seconds: 15
+    vampire-brute:
+      enabled: true
+    hunter-tracker:
+      bonus-radius: 20.0
+    hunter-priest:
+      enabled: true
+
+  kill-effects:
+    red-particles: true
+    screen-shake: true
+    lightning-visual: true
+    special-broadcast: true
+
+  hunter-tracker:
+    enabled: true
+    interval-ticks: 10
+    radius: 30.0
+
+  hunter-bow:
+    enabled: true
+    material: BOW
+    arrows: 24
+    enchantments:
+      power: 2
+      punch: 0
+      flame: 0
+      infinity: 0
+
+  vampire:
+    start-invisibility:
+      enabled: true
+      seconds: 60
+
+    invisibility-on-kill: true
+    invisibility-seconds: 30
+
+    attack-effects:
+      dizziness:
+        enabled: true
+        seconds: 2
+        amplifier: 0
+        chance-percent: 100.0
+        cooldown-seconds: 0
+        ambient: false
+        particles: false
+        icon: true
+        notify-hunter: true
+        notify-vampire: false
+
+  vampire-tracking:
+    opening-reveal:
+      enabled: true
+      glow-all-hunters: true
+      duration-seconds: 1
+
+    blood-scent:
+      enabled: true
+      cooldown-seconds: 20
+      duration-seconds: 7
+      radius: 150.0
+      use-compass: true
+      use-actionbar: true
+
+    anti-camp:
+      enabled: true
+      no-move-seconds: 10
+      required-movement-blocks: 12.0
+      glow-seconds: 3
+      reveal-cooldown-seconds: 20
+      use-bossbar-alert: true
+      damage-final-stage: true
+
+  kits:
+    vampire:
+      armor:
+        helmet:
+          ==: org.bukkit.inventory.ItemStack
+          type: LEATHER_HELMET
+        chestplate:
+          ==: org.bukkit.inventory.ItemStack
+          type: LEATHER_CHESTPLATE
+        leggings:
+          ==: org.bukkit.inventory.ItemStack
+          type: LEATHER_LEGGINGS
+        boots:
+          ==: org.bukkit.inventory.ItemStack
+          type: LEATHER_BOOTS
+
+      offhand:
+        ==: org.bukkit.inventory.ItemStack
+        type: TOTEM_OF_UNDYING
+
+      items:
+        - ==: org.bukkit.inventory.ItemStack
+          type: IRON_SWORD
+          amount: 1
+        - ==: org.bukkit.inventory.ItemStack
+          type: COOKED_BEEF
+          amount: 16
+
+      slots:
+        "0":
+          ==: org.bukkit.inventory.ItemStack
+          type: IRON_SWORD
+          amount: 1
+        "1":
+          ==: org.bukkit.inventory.ItemStack
+          type: COOKED_BEEF
+          amount: 16
+
+      effects:
+        NIGHT_VISION:
+          amplifier: 0
+          duration-seconds: 999999
+          ambient: false
+          particles: false
+          icon: true
+
+    hunter:
+      armor:
+        helmet:
+          ==: org.bukkit.inventory.ItemStack
+          type: IRON_HELMET
+        chestplate:
+          ==: org.bukkit.inventory.ItemStack
+          type: IRON_CHESTPLATE
+        leggings:
+          ==: org.bukkit.inventory.ItemStack
+          type: IRON_LEGGINGS
+        boots:
+          ==: org.bukkit.inventory.ItemStack
+          type: IRON_BOOTS
+
+      offhand: null
+
+      items:
+        - ==: org.bukkit.inventory.ItemStack
+          type: IRON_SWORD
+          amount: 1
+        - ==: org.bukkit.inventory.ItemStack
+          type: BOW
+          amount: 1
+        - ==: org.bukkit.inventory.ItemStack
+          type: ARROW
+          amount: 24
+        - ==: org.bukkit.inventory.ItemStack
+          type: COOKED_BEEF
+          amount: 16
+
+      slots:
+        "0":
+          ==: org.bukkit.inventory.ItemStack
+          type: IRON_SWORD
+          amount: 1
+        "1":
+          ==: org.bukkit.inventory.ItemStack
+          type: BOW
+          amount: 1
+        "2":
+          ==: org.bukkit.inventory.ItemStack
+          type: ARROW
+          amount: 24
+        "3":
+          ==: org.bukkit.inventory.ItemStack
+          type: COMPASS
+          amount: 1
+        "4":
+          ==: org.bukkit.inventory.ItemStack
+          type: COOKED_BEEF
+          amount: 16
+
+      effects:
+        SPEED:
+          amplifier: 0
+          duration-seconds: 999999
+          ambient: false
+          particles: false
+          icon: true
+
+arena:
+  lobby:
+    world: "vh_arena"
+    x: 118.52
+    y: 63.0
+    z: -4.38
+    yaw: 93.00
+    pitch: 13.80
+
+  return:
+    world: "spawn"
+    x: 371.5
+    y: 1.0
+    z: 245.5
+    yaw: 91.20
+    pitch: 9.75
+
+  vampire:
+    world: "vh_arena"
+    x: 83.96
+    y: 62.5
+    z: -41.16
+    yaw: -88.30
+    pitch: 28.80
+
+  hunter:
+    world: "vh_arena"
+    x: 16.73
+    y: 62.0
+    z: -91.19
+    yaw: -0.45
+    pitch: 4.95
+
+  spectator:
+    world: "vh_arena"
+    x: 9.76
+    y: 84.0
+    z: -30.95
+    yaw: 172.65
+    pitch: 42.60

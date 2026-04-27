@@ -1,0 +1,44 @@
+name: DraculaVampireHunt
+version: 1.0.0
+main: com.draculavampirehunt.DraculaVampireHunt
+api-version: "1.21"
+author: Christian
+description: Vampire vs Hunters event minigame plugin with classes, stats, spectators, horror effects, ready checks, and round MVPs.
+website: https://perplexity.ai
+
+softdepend:
+  - Vault
+
+commands:
+  vhunt:
+    description: Main player command for the Vampire Hunt event.
+    usage: /vhunt help
+    aliases: [vampirehunt, bloodhunt, vh]
+    permission: draculavampirehunt.use
+
+  vhadmin:
+    description: Admin command for controlling the Vampire Hunt event.
+    usage: /vhadmin help
+    aliases: [vha, vampirehuntadmin]
+    permission: draculavampirehunt.admin
+
+permissions:
+  draculavampirehunt.*:
+    description: Grants all DraculaVampireHunt permissions.
+    default: op
+    children:
+      draculavampirehunt.use: true
+      draculavampirehunt.admin: true
+      draculavampirehunt.admin.stats: true
+
+  draculavampirehunt.use:
+    description: Allows using player Vampire Hunt commands.
+    default: true
+
+  draculavampirehunt.admin:
+    description: Allows using admin Vampire Hunt commands.
+    default: op
+
+  draculavampirehunt.admin.stats:
+    description: Allows viewing other players' Vampire Hunt stats.
+    default: op
