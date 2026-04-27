@@ -21,6 +21,8 @@ import java.util.UUID;
 
 public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
 
+    private static final String LINE  = "§8§m----------------------------------------------------";
+    private static final String ARROW = "  §8» ";
     private static final DecimalFormat PCT = new DecimalFormat("0.00");
 
     private final DraculaVampireHunt plugin;
@@ -28,6 +30,10 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
     public VampireHuntAdminCommand(DraculaVampireHunt plugin) {
         this.plugin = plugin;
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Command dispatch
+    // ─────────────────────────────────────────────────────────────────────────
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -49,27 +55,31 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
         switch (sub) {
 
             // ── Help ──────────────────────────────────────────────────────────
-            case "help" -> {
-                sendHelp(sender, label);
-            }
+            case "help" -> sendHelp(sender, label);
 
             // ── Event lifecycle ───────────────────────────────────────────────
             case "start" -> {
-                boolean started = manager.startEventByAdmin(VampireHuntManager.CommandSource.CONSOLE);
-                if (started) chat.sendPrefixed(sender, "§aVampire Hunt start sequence triggered.");
-                else         chat.sendPrefixed(sender, "§cCould not start the event. Check queue size or current phase.");
+                if (manager.startEventByAdmin(VampireHuntManager.CommandSource.CONSOLE)) {
+                    chat.sendPrefixed(sender, "§aVampire Hunt countdown triggered.");
+                } else {
+                    chat.sendPrefixed(sender, "§cCannot start: check queue size (min 2) or current phase (§f" + manager.getPhaseName() + "§c).");
+                }
             }
 
             case "stop" -> {
-                boolean stopped = manager.stopEventGracefully();
-                if (stopped) chat.sendPrefixed(sender, "§eVampire Hunt stopped.");
-                else         chat.sendPrefixed(sender, "§cThere is no active or queued event to stop.");
+                if (manager.stopEventGracefully()) {
+                    chat.sendPrefixed(sender, "§eVampire Hunt stopped gracefully.");
+                } else {
+                    chat.sendPrefixed(sender, "§cNo active or queued event to stop.");
+                }
             }
 
             case "forcestop" -> {
-                boolean stopped = manager.forceStopEvent();
-                if (stopped) chat.sendPrefixed(sender, "§cVampire Hunt force-stopped.");
-                else         chat.sendPrefixed(sender, "§cThere is no active or queued event to force-stop.");
+                if (manager.forceStopEvent()) {
+                    chat.sendPrefixed(sender, "§cVampire Hunt force-stopped.");
+                } else {
+                    chat.sendPrefixed(sender, "§cNo active or queued event to force-stop.");
+                }
             }
 
             case "reload" -> {
@@ -80,15 +90,16 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
 
             // ── Status ────────────────────────────────────────────────────────
             case "status" -> {
-                sender.sendMessage("§8§m--------------------------------------------------");
-                sender.sendMessage("§4§lVampire Hunt Admin §7- Status");
-                sender.sendMessage("§7Phase: §f"           + manager.getPhaseName());
-                sender.sendMessage("§7Queued Players: §f"  + manager.getQueuedCount());
-                sender.sendMessage("§7Ready Players: §f"   + manager.getReadyCount());
-                sender.sendMessage("§7Active Players: §f"  + manager.getActiveCount());
-                sender.sendMessage("§7Vampires Alive: §f"  + manager.getVampireCount());
-                sender.sendMessage("§7Hunters Alive: §f"   + manager.getHunterCount());
-                sender.sendMessage("§8§m--------------------------------------------------");
+                sender.sendMessage(LINE);
+                sender.sendMessage("  §4§lVampire Hunt Admin §8— §7Live Status");
+                sender.sendMessage("");
+                sender.sendMessage("  §7Phase:          §f" + manager.getPhaseName());
+                sender.sendMessage("  §7Queued Players: §f" + manager.getQueuedCount());
+                sender.sendMessage("  §7Ready Players:  §f" + manager.getReadyCount());
+                sender.sendMessage("  §7Active Players: §f" + manager.getActiveCount());
+                sender.sendMessage("  §7Vampires Alive: §5" + manager.getVampireCount());
+                sender.sendMessage("  §7Hunters Alive:  §b" + manager.getHunterCount());
+                sender.sendMessage(LINE);
             }
 
             // ── Spawn setup ───────────────────────────────────────────────────
@@ -98,10 +109,18 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (args.length < 2) {
-                    chat.sendPrefixed(player, "§cUsage: /" + label + " setspawn <lobby|vampire|hunter|return|spectator>");
+                    player.sendMessage(LINE);
+                    player.sendMessage("  §4§lVampire Hunt Admin §8— §7Spawn Setup");
+                    player.sendMessage("");
+                    player.sendMessage("  §7Stand at the location you want to set, then:");
+                    player.sendMessage(ARROW + "§f/" + label + " setspawn lobby     §8│ §7Queue / waiting area");
+                    player.sendMessage(ARROW + "§f/" + label + " setspawn vampire   §8│ §7Vampire team spawn");
+                    player.sendMessage(ARROW + "§f/" + label + " setspawn hunter    §8│ §7Hunter team spawn");
+                    player.sendMessage(ARROW + "§f/" + label + " setspawn return    §8│ §7Post-event return point");
+                    player.sendMessage(ARROW + "§f/" + label + " setspawn spectator §8│ §7Spectator camera perch");
+                    player.sendMessage(LINE);
                     return true;
                 }
-
                 String spawnType = args[1].toLowerCase(Locale.ROOT);
                 String configPath = switch (spawnType) {
                     case "lobby"     -> "arena.lobby";
@@ -109,14 +128,12 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
                     case "hunter"    -> "arena.hunter";
                     case "return"    -> "arena.return";
                     case "spectator" -> "arena.spectator";
-                    default -> null;
+                    default          -> null;
                 };
-
                 if (configPath == null) {
-                    chat.sendPrefixed(player, "§cUnknown spawn type. Use: lobby, vampire, hunter, return, spectator.");
+                    chat.sendPrefixed(player, "§cUnknown spawn type. Valid: lobby, vampire, hunter, return, spectator.");
                     return true;
                 }
-
                 plugin.getEventArenaManager().setLocation(configPath, player.getLocation());
                 chat.sendPrefixed(player, "§aSpawn §f" + spawnType + " §aset to your current location.");
             }
@@ -124,7 +141,7 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
             // ── In-event role management ──────────────────────────────────────
             case "addvampire" -> {
                 if (args.length < 2) {
-                    chat.sendPrefixed(sender, "§cUsage: /" + label + " addvampire <player>");
+                    chat.sendPrefixed(sender, "§cUsage: §f/" + label + " addvampire <player>");
                     return true;
                 }
                 Player target = Bukkit.getPlayerExact(args[1]);
@@ -132,13 +149,12 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
                     chat.sendPrefixed(sender, "§cPlayer §f" + args[1] + " §cis not online.");
                     return true;
                 }
-                String result = manager.adminForceVampire(target);
-                chat.sendPrefixed(sender, result);
+                chat.sendPrefixed(sender, manager.adminForceVampire(target));
             }
 
             case "removevampire" -> {
                 if (args.length < 2) {
-                    chat.sendPrefixed(sender, "§cUsage: /" + label + " removevampire <player>");
+                    chat.sendPrefixed(sender, "§cUsage: §f/" + label + " removevampire <player>");
                     return true;
                 }
                 Player target = Bukkit.getPlayerExact(args[1]);
@@ -146,13 +162,12 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
                     chat.sendPrefixed(sender, "§cPlayer §f" + args[1] + " §cis not online.");
                     return true;
                 }
-                String result = manager.adminForceHunter(target);
-                chat.sendPrefixed(sender, result);
+                chat.sendPrefixed(sender, manager.adminForceHunter(target));
             }
 
             case "addplayer" -> {
                 if (args.length < 2) {
-                    chat.sendPrefixed(sender, "§cUsage: /" + label + " addplayer <player>");
+                    chat.sendPrefixed(sender, "§cUsage: §f/" + label + " addplayer <player>");
                     return true;
                 }
                 Player target = Bukkit.getPlayerExact(args[1]);
@@ -160,17 +175,16 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
                     chat.sendPrefixed(sender, "§cPlayer §f" + args[1] + " §cis not online.");
                     return true;
                 }
-                boolean joined = manager.joinEvent(target);
-                if (!joined) {
-                    chat.sendPrefixed(sender, "§ePlayer §f" + target.getName() + " §ecould not be added (may already be in the event).");
-                } else {
+                if (manager.joinEvent(target)) {
                     chat.sendPrefixed(sender, "§aForce-added §f" + target.getName() + " §ato the event queue.");
+                } else {
+                    chat.sendPrefixed(sender, "§eCould not add §f" + target.getName() + " §e(may already be in the event).");
                 }
             }
 
             case "removeplayer" -> {
                 if (args.length < 2) {
-                    chat.sendPrefixed(sender, "§cUsage: /" + label + " removeplayer <player>");
+                    chat.sendPrefixed(sender, "§cUsage: §f/" + label + " removeplayer <player>");
                     return true;
                 }
                 Player target = Bukkit.getPlayerExact(args[1]);
@@ -178,20 +192,19 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
                     chat.sendPrefixed(sender, "§cPlayer §f" + args[1] + " §cis not online.");
                     return true;
                 }
-                boolean removed = manager.leaveEvent(target, true);
-                if (!removed) {
-                    chat.sendPrefixed(sender, "§ePlayer §f" + target.getName() + " §ewas not in the event.");
-                } else {
+                if (manager.leaveEvent(target, true)) {
                     chat.sendPrefixed(sender, "§aRemoved §f" + target.getName() + " §afrom the event.");
+                } else {
+                    chat.sendPrefixed(sender, "§ePlayer §f" + target.getName() + " §ewas not in the event.");
                 }
             }
 
             // ── Player lists ──────────────────────────────────────────────────
             case "listplayers" -> {
-                sender.sendMessage("§8§m--------------------------------------------------");
-                sender.sendMessage("§4§lVampire Hunt §7- Active Players");
+                sender.sendMessage(LINE);
+                sender.sendMessage("  §4§lVampire Hunt Admin §8— §7Active Players");
                 sender.sendMessage(manager.getAdminPlayerListMessage());
-                sender.sendMessage("§8§m--------------------------------------------------");
+                sender.sendMessage(LINE);
             }
 
             // ── Leaderboard ───────────────────────────────────────────────────
@@ -203,7 +216,7 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
             // ── Stats for any player ──────────────────────────────────────────
             case "stats" -> {
                 if (args.length < 2) {
-                    chat.sendPrefixed(sender, "§cUsage: /" + label + " stats <player>");
+                    chat.sendPrefixed(sender, "§cUsage: §f/" + label + " stats <player>");
                     return true;
                 }
                 @SuppressWarnings("deprecation")
@@ -217,7 +230,47 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    // ── Leaderboard helper ────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // Help — sectioned admin overview
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void sendHelp(CommandSender sender, String label) {
+        sender.sendMessage(LINE);
+        sender.sendMessage("  §4§lVampire Hunt Admin §8— §7Command Reference  §8[§f/" + label + "§8]");
+        sender.sendMessage("");
+
+        sender.sendMessage("§6§lEvent Lifecycle");
+        sender.sendMessage(ARROW + "§f/" + label + " start        §8│ §7Force-start countdown (skip ready check)");
+        sender.sendMessage(ARROW + "§f/" + label + " stop         §8│ §7Stop gracefully (restores all players)");
+        sender.sendMessage(ARROW + "§f/" + label + " forcestop    §8│ §7Immediately stop and restore all players");
+        sender.sendMessage(ARROW + "§f/" + label + " reload       §8│ §7Reload config.yml and player stats");
+        sender.sendMessage(ARROW + "§f/" + label + " status       §8│ §7Live phase, queue size, team counts");
+        sender.sendMessage("");
+
+        sender.sendMessage("§6§lArena Setup");
+        sender.sendMessage(ARROW + "§f/" + label + " setspawn <type>   §8│ §7Set a spawn at your location");
+        sender.sendMessage("    §8Types: §flobby §8· §fvampire §8· §fhunter §8· §freturn §8· §fspectator");
+        sender.sendMessage("    §8Tip: run §f/" + label + " setspawn §8alone for a guided list.");
+        sender.sendMessage("");
+
+        sender.sendMessage("§6§lPlayer Management");
+        sender.sendMessage(ARROW + "§f/" + label + " addplayer <p>      §8│ §7Force-add player to the queue");
+        sender.sendMessage(ARROW + "§f/" + label + " removeplayer <p>   §8│ §7Force-remove player from the event");
+        sender.sendMessage(ARROW + "§f/" + label + " addvampire <p>     §8│ §7Switch a player to the vampire team");
+        sender.sendMessage(ARROW + "§f/" + label + " removevampire <p>  §8│ §7Switch a vampire back to hunter");
+        sender.sendMessage(ARROW + "§f/" + label + " listplayers        §8│ §7List all current participants by role");
+        sender.sendMessage("");
+
+        sender.sendMessage("§6§lStats & Leaderboards");
+        sender.sendMessage(ARROW + "§f/" + label + " stats <player>          §8│ §7Full stats for any player");
+        sender.sendMessage(ARROW + "§f/" + label + " leaderboard [category]  §8│ §7Top-10 leaderboard");
+        sender.sendMessage("    §8Categories: §fwins §8· §fkills §8· §fhunterkills §8· §finfections §8· §fevents §8· §fstreak");
+        sender.sendMessage(LINE);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Leaderboard
+    // ─────────────────────────────────────────────────────────────────────────
 
     private void sendLeaderboard(CommandSender sender, String category) {
         EventStatsManager statsManager = plugin.getEventStatsManager();
@@ -260,67 +313,59 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
             default                      -> "Wins";
         };
 
-        sender.sendMessage("§8§m--------------------------------------------------");
-        sender.sendMessage("§4§lVampire Hunt §7- Top " + limit + " by §f" + catLabel);
+        sender.sendMessage(LINE);
+        sender.sendMessage("  §4§lVampire Hunt §8— §7Top " + limit + " by §f" + catLabel);
+        sender.sendMessage("");
         for (int i = 0; i < limit; i++) {
             Entry e = entries.get(i);
             String medal = switch (i) {
-                case 0 -> "§6#1 ";
-                case 1 -> "§7#2 ";
-                case 2 -> "§c#3 ";
+                case 0  -> "§6§l#1 ";
+                case 1  -> "§7§l#2 ";
+                case 2  -> "§c§l#3 ";
                 default -> "§8#" + (i + 1) + " ";
             };
-            sender.sendMessage(medal + "§f" + e.name() + " §8- §e" + e.value());
+            sender.sendMessage("  " + medal + "§f" + e.name() + " §8— §e" + e.value());
         }
-        sender.sendMessage("§7Categories: wins | kills | hunterkills | infections | events | streak");
-        sender.sendMessage("§8§m--------------------------------------------------");
+        sender.sendMessage("");
+        sender.sendMessage("  §8Filter: §f/" + "vhadmin" + " leaderboard §8[wins|kills|hunterkills|infections|events|streak]");
+        sender.sendMessage(LINE);
     }
 
-    // ── Stats helper ─────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // Stats
+    // ─────────────────────────────────────────────────────────────────────────
 
     private void sendStats(CommandSender sender, UUID targetId, String targetName) {
-        EventStatsManager.PlayerEventStats stats = plugin.getEventStatsManager().getStats(targetId);
-        double winRate = plugin.getEventStatsManager().getWinRate(targetId) * 100.0;
-        String primaryTitle = plugin.getEventStatsManager().getPrimaryTitle(targetId);
+        EventStatsManager statsManager = plugin.getEventStatsManager();
+        EventStatsManager.PlayerEventStats stats = statsManager.getStats(targetId);
+        double winRate = statsManager.getWinRate(targetId) * 100.0;
+        String primaryTitle = statsManager.getPrimaryTitle(targetId);
 
-        sender.sendMessage("§8§m--------------------------------------------------");
-        sender.sendMessage("§4§lVampire Hunt §7- Stats: §f" + targetName);
-        if (!primaryTitle.isBlank()) sender.sendMessage("§7Title: §d" + primaryTitle);
-        sender.sendMessage("§7Events Played: §f" + stats.getEventsPlayed());
-        sender.sendMessage("§7Wins: §a" + stats.getWins() + " §7| Losses: §c" + stats.getLosses() + " §7| Win Rate: §e" + PCT.format(winRate) + "%");
-        sender.sendMessage("§7Vampire Wins: §5" + stats.getVampireWins() + " §7| Hunter Wins: §b" + stats.getHunterWins());
-        sender.sendMessage("§7Vampire Kills: §5" + stats.getVampireKills() + " §7| Hunter Kills: §b" + stats.getHunterKills() + " §7| Infections: §4" + stats.getInfections());
-        sender.sendMessage("§7Current Streak: §e" + stats.getCurrentWinStreak() + " §7| Best Streak: §6" + stats.getBestWinStreak());
-        List<String> titles = plugin.getEventStatsManager().getUnlockedTitles(targetId);
-        sender.sendMessage("§7Titles: §f" + (titles.isEmpty() ? "None" : String.join("§7, §f", titles)));
-        sender.sendMessage("§8§m--------------------------------------------------");
+        sender.sendMessage(LINE);
+        sender.sendMessage("  §4§lVampire Hunt Admin §8— §7Stats: §f" + targetName);
+        sender.sendMessage("");
+        if (!primaryTitle.isBlank()) {
+            sender.sendMessage("  §7Title:          §d" + primaryTitle);
+        }
+        sender.sendMessage("  §7Events Played:  §f" + stats.getEventsPlayed());
+        sender.sendMessage("  §aWins: §f" + stats.getWins()
+                + "  §cLosses: §f" + stats.getLosses()
+                + "  §eWin Rate: §f" + PCT.format(winRate) + "%");
+        sender.sendMessage("  §5Vampire Wins:   §f" + stats.getVampireWins()
+                + "   §bHunter Wins: §f" + stats.getHunterWins());
+        sender.sendMessage("  §5Vampire Kills:  §f" + stats.getVampireKills()
+                + "   §bHunter Kills: §f" + stats.getHunterKills()
+                + "   §4Infections: §f" + stats.getInfections());
+        sender.sendMessage("  §eStreak: §f" + stats.getCurrentWinStreak()
+                + "  §6Best: §f" + stats.getBestWinStreak());
+        List<String> titles = statsManager.getUnlockedTitles(targetId);
+        sender.sendMessage("  §7Titles: §d" + (titles.isEmpty() ? "§8None" : String.join("§7, §d", titles)));
+        sender.sendMessage(LINE);
     }
 
-    // ── Help ──────────────────────────────────────────────────────────────────
-
-    private void sendHelp(CommandSender sender, String label) {
-        sender.sendMessage("§8§m--------------------------------------------------");
-        sender.sendMessage("§4§lVampire Hunt Admin Commands");
-        sender.sendMessage("§c/" + label + " help                     §8- §7Show this page.");
-        sender.sendMessage("§c/" + label + " start                    §8- §7Force-start the countdown.");
-        sender.sendMessage("§c/" + label + " stop                     §8- §7Stop the event gracefully.");
-        sender.sendMessage("§c/" + label + " forcestop                §8- §7Force-stop immediately.");
-        sender.sendMessage("§c/" + label + " reload                   §8- §7Reload config and stats.");
-        sender.sendMessage("§c/" + label + " status                   §8- §7Show live event status.");
-        sender.sendMessage("§c/" + label + " setspawn <type>          §8- §7Set spawn at your location.");
-        sender.sendMessage("§7  Types: lobby, vampire, hunter, return, spectator");
-        sender.sendMessage("§c/" + label + " addvampire <player>      §8- §7Force a player to the vampire team.");
-        sender.sendMessage("§c/" + label + " removevampire <player>   §8- §7Switch a vampire back to hunter.");
-        sender.sendMessage("§c/" + label + " addplayer <player>       §8- §7Force-add a player to the queue.");
-        sender.sendMessage("§c/" + label + " removeplayer <player>    §8- §7Force-remove a player.");
-        sender.sendMessage("§c/" + label + " listplayers              §8- §7List all active participants.");
-        sender.sendMessage("§c/" + label + " leaderboard [category]   §8- §7Show top-10 leaderboard.");
-        sender.sendMessage("§7  Categories: wins | kills | hunterkills | infections | events | streak");
-        sender.sendMessage("§c/" + label + " stats <player>           §8- §7View any player's stats.");
-        sender.sendMessage("§8§m--------------------------------------------------");
-    }
-
-    // ── Tab completion ────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // Tab completion
+    // ─────────────────────────────────────────────────────────────────────────
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
@@ -335,10 +380,11 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 2) {
             return switch (args[0].toLowerCase(Locale.ROOT)) {
-                case "setspawn"                         -> filter(args[1], "lobby", "vampire", "hunter", "return", "spectator");
-                case "leaderboard", "lb", "top"         -> filter(args[1], "wins", "kills", "hunterkills", "infections", "events", "streak");
-                case "addvampire","removevampire",
-                     "addplayer","removeplayer","stats"  -> onlinePlayers(args[1]);
+                case "setspawn"                        -> filter(args[1], "lobby", "vampire", "hunter", "return", "spectator");
+                case "leaderboard", "lb", "top"        -> filter(args[1], "wins", "kills", "hunterkills", "infections", "events", "streak");
+                case "addvampire", "removevampire",
+                     "addplayer", "removeplayer",
+                     "stats"                           -> onlinePlayers(args[1]);
                 default -> Collections.emptyList();
             };
         }
@@ -357,10 +403,10 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
 
     private List<String> filter(String input, String... values) {
         String lower = input == null ? "" : input.toLowerCase(Locale.ROOT);
-        List<String> matches = new ArrayList<>();
-        for (String value : values) {
-            if (value.toLowerCase(Locale.ROOT).startsWith(lower)) matches.add(value);
+        List<String> out = new ArrayList<>();
+        for (String v : values) {
+            if (v.toLowerCase(Locale.ROOT).startsWith(lower)) out.add(v);
         }
-        return matches;
+        return out;
     }
 }
