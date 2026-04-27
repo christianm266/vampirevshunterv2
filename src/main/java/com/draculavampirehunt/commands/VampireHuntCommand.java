@@ -33,9 +33,9 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         this.plugin = plugin;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────────────
     // Command dispatch
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────────────
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -225,9 +225,9 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────────────
     // Help — context-aware (role shown if in event)
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────────────
 
     private void sendHelp(CommandSender sender, String label, VampireHuntManager manager) {
         boolean isPlayer    = sender instanceof Player;
@@ -239,7 +239,7 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(LINE);
         sender.sendMessage("  §4§lVampire Hunt §8— §7Player Help  §8[§f/" + label + "§8]");
 
-        // ── Context banner ────────────────────────────────────────────────────
+        // ── Context banner ──────────────────────────────────────────────────────
         if (isVampire) {
             sender.sendMessage("  §5● You are a §lVampire§r§5. Convert all hunters to win.");
         } else if (isHunter) {
@@ -254,7 +254,7 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
 
         sender.sendMessage("");
 
-        // ── Joining & Queue ───────────────────────────────────────────────────
+        // ── Joining & Queue ──────────────────────────────────────────────────
         sender.sendMessage("§6§lJoining & Queue");
         sender.sendMessage(ARROW + "§f/" + label + " join     §8│ §7Enter the event queue");
         sender.sendMessage(ARROW + "§f/" + label + " leave    §8│ §7Leave queue, active event, or spectator mode");
@@ -262,7 +262,7 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ARROW + "§f/" + label + " unready  §8│ §7Withdraw your ready state");
         sender.sendMessage("");
 
-        // ── Classes ───────────────────────────────────────────────────────────
+        // ── Classes ───────────────────────────────────────────────────────────────────
         sender.sendMessage("§6§lClasses  §8(§7pick before or during the event§8)");
         sender.sendMessage(ARROW + "§f/" + label + " class <name>  §8│ §7Select your class");
         sender.sendMessage(ARROW + "§f/" + label + " ability       §8│ §7Activate your class active ability");
@@ -285,20 +285,20 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         }
         sender.sendMessage("");
 
-        // ── In-event ──────────────────────────────────────────────────────────
+        // ── In-event ──────────────────────────────────────────────────────────────────
         sender.sendMessage("§6§lIn-Event Info");
         sender.sendMessage(ARROW + "§f/" + label + " teams   §8│ §7Live hunter / vampire counts");
         sender.sendMessage(ARROW + "§f/" + label + " status  §8│ §7Current phase, queue size, active players");
         sender.sendMessage(ARROW + "§f/" + label + " info    §8│ §7Full event rules and win conditions");
         sender.sendMessage("");
 
-        // ── Spectator ─────────────────────────────────────────────────────────
+        // ── Spectator ─────────────────────────────────────────────────────────────────
         sender.sendMessage("§6§lSpectator & Voting");
         sender.sendMessage(ARROW + "§f/" + label + " specteleport <next|hunters|vampires>  §8│ §7Cycle your spectate target");
         sender.sendMessage(ARROW + "§f/" + label + " vote <double|nocompass|sd|fog|none>   §8│ §7Vote for next round modifier");
         sender.sendMessage("");
 
-        // ── Stats ─────────────────────────────────────────────────────────────
+        // ── Stats ──────────────────────────────────────────────────────────────────────
         sender.sendMessage("§6§lStats");
         sender.sendMessage(ARROW + "§f/" + label + " stats           §8│ §7View your own stats");
         if (sender.hasPermission("draculavampirehunt.admin.stats")) {
@@ -307,9 +307,9 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(LINE);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────────────
     // Class help — shown when /vhunt class is used with no argument
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────────────
 
     private void sendClassHelp(Player player, String label, VampireHuntManager manager) {
         boolean isVampire = manager.isVampire(player.getUniqueId());
@@ -344,9 +344,9 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(LINE);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────────────
     // Event info
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────────────
 
     private void sendEventInfo(CommandSender sender) {
         sender.sendMessage(LINE);
@@ -388,9 +388,9 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(LINE);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Stats
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────────────
+    // Stats — uses getters (compile fix)
+    // ───────────────────────────────────────────────────────────────────────────
 
     private void sendStats(CommandSender sender, UUID targetId, String targetName) {
         EventStatsManager statsManager = plugin.getEventStatsManager();
@@ -401,23 +401,23 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(LINE);
         sender.sendMessage("  §4§lVampire Hunt §8— §7Stats: §f" + (targetName != null ? targetName : targetId.toString()));
         sender.sendMessage("");
-        sender.sendMessage("  §7Events played: §f" + stats.eventsPlayed);
-        sender.sendMessage("  §aWins: §f" + stats.wins + "  §cLosses: §f" + stats.losses
+        sender.sendMessage("  §7Events played: §f" + stats.getEventsPlayed());
+        sender.sendMessage("  §aWins: §f" + stats.getWins() + "  §cLosses: §f" + stats.getLosses()
                 + "  §7Win Rate: §e" + PERCENT_FORMAT.format(winRate) + "%");
         sender.sendMessage("  §7K/D Ratio: §f" + PERCENT_FORMAT.format(kd));
-        sender.sendMessage("  §7Total Kills: §f" + stats.totalKills + "  §7Deaths: §f" + stats.totalDeaths);
-        sender.sendMessage("  §7Infections: §4" + stats.infections);
-        sender.sendMessage("  §7Vampire Rounds: §5" + stats.vampireRounds
-                + "  §7Hunter Rounds: §b" + stats.hunterRounds);
-        if (!stats.unlockedTitles.isEmpty()) {
-            sender.sendMessage("  §7Titles: §d" + String.join("§7, §d", stats.unlockedTitles));
+        sender.sendMessage("  §7Total Kills: §f" + stats.getTotalKills() + "  §7Deaths: §f" + stats.getTotalDeaths());
+        sender.sendMessage("  §7Infections: §4" + stats.getInfections());
+        sender.sendMessage("  §7Vampire Rounds: §5" + stats.getVampireRounds()
+                + "  §7Hunter Rounds: §b" + stats.getHunterRounds());
+        if (!stats.getUnlockedTitles().isEmpty()) {
+            sender.sendMessage("  §7Titles: §d" + String.join("§7, §d", stats.getUnlockedTitles()));
         }
         sender.sendMessage(LINE);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────────────
     // Tab completion
-    // ─────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────────────
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {

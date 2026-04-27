@@ -68,6 +68,12 @@ public class EventStatsManager {
                 stats.setHunterWins(statsConfig.getInt(base + "hunter-wins", 0));
                 stats.setCurrentWinStreak(statsConfig.getInt(base + "current-win-streak", 0));
                 stats.setBestWinStreak(statsConfig.getInt(base + "best-win-streak", 0));
+                // ── new fields ──────────────────────────────────────────────
+                stats.setTotalDeaths(statsConfig.getInt(base + "total-deaths", 0));
+                stats.setVampireRounds(statsConfig.getInt(base + "vampire-rounds", 0));
+                stats.setHunterRounds(statsConfig.getInt(base + "hunter-rounds", 0));
+                // totalKills is derived — recompute from stored kills to stay consistent
+                stats.setTotalKills(stats.getVampireKills() + stats.getHunterKills());
                 stats.setUnlockedTitles(new ArrayList<>(statsConfig.getStringList(base + "unlocked-titles")));
 
                 // ── cosmetic titles (key → display) ──────────────────────────
@@ -110,6 +116,11 @@ public class EventStatsManager {
             statsConfig.set(base + "hunter-wins", stats.getHunterWins());
             statsConfig.set(base + "current-win-streak", stats.getCurrentWinStreak());
             statsConfig.set(base + "best-win-streak", stats.getBestWinStreak());
+            // ── new fields ──────────────────────────────────────────────────
+            statsConfig.set(base + "total-deaths", stats.getTotalDeaths());
+            statsConfig.set(base + "vampire-rounds", stats.getVampireRounds());
+            statsConfig.set(base + "hunter-rounds", stats.getHunterRounds());
+            // totalKills is derived — not persisted separately
             statsConfig.set(base + "unlocked-titles", stats.getUnlockedTitles());
 
             // ── cosmetic titles ───────────────────────────────────────────────
@@ -144,6 +155,21 @@ public class EventStatsManager {
             return 0.0D;
         }
         return (double) stats.getWins() / played;
+    }
+
+    /**
+     * Returns kill / death ratio. Deaths are tracked via {@link #addDeath(UUID)}.
+     * Returns 0.0 when there are no kills and no deaths, or the total kills as a
+     * double when deaths == 0 (avoids division-by-zero; common "infinite" KD).
+     */
+    public double getKillDeathRatio(UUID playerId) {
+        PlayerEventStats stats = getStats(playerId);
+        int kills  = stats.getTotalKills();
+        int deaths = stats.getTotalDeaths();
+        if (deaths == 0) {
+            return kills;
+        }
+        return (double) kills / deaths;
     }
 
     public List<String> getUnlockedTitles(UUID playerId) {
@@ -223,6 +249,7 @@ public class EventStatsManager {
     public void addVampireKill(UUID playerId) {
         PlayerEventStats stats = getStats(playerId);
         stats.setVampireKills(stats.getVampireKills() + 1);
+        stats.setTotalKills(stats.getTotalKills() + 1);
         checkUnlocks(playerId, stats);
         saveAsync();
     }
@@ -230,6 +257,7 @@ public class EventStatsManager {
     public void addHunterKill(UUID playerId) {
         PlayerEventStats stats = getStats(playerId);
         stats.setHunterKills(stats.getHunterKills() + 1);
+        stats.setTotalKills(stats.getTotalKills() + 1);
         checkUnlocks(playerId, stats);
         saveAsync();
     }
@@ -238,6 +266,13 @@ public class EventStatsManager {
         PlayerEventStats stats = getStats(playerId);
         stats.setInfections(stats.getInfections() + 1);
         checkUnlocks(playerId, stats);
+        saveAsync();
+    }
+
+    /** Call when a player is eliminated / leaves the event as an active participant. */
+    public void addDeath(UUID playerId) {
+        PlayerEventStats stats = getStats(playerId);
+        stats.setTotalDeaths(stats.getTotalDeaths() + 1);
         saveAsync();
     }
 
@@ -252,6 +287,20 @@ public class EventStatsManager {
         PlayerEventStats stats = getStats(playerId);
         stats.setHunterWins(stats.getHunterWins() + 1);
         checkUnlocks(playerId, stats);
+        saveAsync();
+    }
+
+    /** Increments the number of rounds this player participated in as a vampire. */
+    public void addVampireRound(UUID playerId) {
+        PlayerEventStats stats = getStats(playerId);
+        stats.setVampireRounds(stats.getVampireRounds() + 1);
+        saveAsync();
+    }
+
+    /** Increments the number of rounds this player participated in as a hunter. */
+    public void addHunterRound(UUID playerId) {
+        PlayerEventStats stats = getStats(playerId);
+        stats.setHunterRounds(stats.getHunterRounds() + 1);
         saveAsync();
     }
 
@@ -338,6 +387,12 @@ public class EventStatsManager {
         private int hunterWins;
         private int currentWinStreak;
         private int bestWinStreak;
+        // ── new fields (compile fix) ─────────────────────────────────────────
+        private int totalKills;
+        private int totalDeaths;
+        private int vampireRounds;
+        private int hunterRounds;
+        // ─────────────────────────────────────────────────────────────────────
         private List<String> unlockedTitles = new ArrayList<>();
 
         /** key = unlockKey (e.g. "top-vampire-mvp"), value = colour display string */
@@ -372,6 +427,18 @@ public class EventStatsManager {
 
         public int getBestWinStreak() { return bestWinStreak; }
         public void setBestWinStreak(int bestWinStreak) { this.bestWinStreak = bestWinStreak; }
+
+        public int getTotalKills() { return totalKills; }
+        public void setTotalKills(int totalKills) { this.totalKills = totalKills; }
+
+        public int getTotalDeaths() { return totalDeaths; }
+        public void setTotalDeaths(int totalDeaths) { this.totalDeaths = totalDeaths; }
+
+        public int getVampireRounds() { return vampireRounds; }
+        public void setVampireRounds(int vampireRounds) { this.vampireRounds = vampireRounds; }
+
+        public int getHunterRounds() { return hunterRounds; }
+        public void setHunterRounds(int hunterRounds) { this.hunterRounds = hunterRounds; }
 
         public List<String> getUnlockedTitles() { return unlockedTitles; }
         public void setUnlockedTitles(List<String> unlockedTitles) { this.unlockedTitles = unlockedTitles; }
