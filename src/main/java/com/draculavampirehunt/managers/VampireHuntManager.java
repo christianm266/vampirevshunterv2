@@ -48,6 +48,9 @@ public class VampireHuntManager {
 
     private final DraculaVampireHunt plugin;
 
+    // ── Fix #6 — VoteManager field ───────────────────────────────────────────
+    private final VoteManager voteManager;
+
     private final Set<UUID> queuedPlayers = ConcurrentHashMap.newKeySet();
     private final Set<UUID> readyPlayers = ConcurrentHashMap.newKeySet();
 
@@ -99,6 +102,15 @@ public class VampireHuntManager {
 
     public VampireHuntManager(DraculaVampireHunt plugin) {
         this.plugin = plugin;
+        this.voteManager = new VoteManager(plugin);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Fix #6 — expose VoteManager
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public VoteManager getVoteManager() {
+        return voteManager;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -485,11 +497,6 @@ public class VampireHuntManager {
     // Chat tag helper — called by the chat listener
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Returns the coloured role tag for a player currently in the event,
-     * or an empty string if the player is not an active participant.
-     * Format: §8[§5Vampire§8] or §8[§bHunter§8]
-     */
     public String getRoleTag(UUID playerId) {
         if (vampires.contains(playerId)) {
             return "§8[§5Vampire§8] ";
@@ -1012,6 +1019,10 @@ public class VampireHuntManager {
 
         hardResetRuntimeState(false);
 
+        // ── Fix #6 — consume active vote modifier before setup ────────────────
+        VoteManager.RoundModifier modifier = voteManager.getActiveModifier();
+        voteManager.reset();
+
         phase = EventPhase.ACTIVE;
         eventStartMillis = System.currentTimeMillis();
 
@@ -1021,6 +1032,13 @@ public class VampireHuntManager {
         Collections.shuffle(participants);
 
         int vampireCount = Math.max(1, plugin.getConfig().getInt("event.roles.initial-vampires", 1));
+
+        // DOUBLE_VAMPIRES modifier: double the initial vampire count
+        if (modifier == VoteManager.RoundModifier.DOUBLE_VAMPIRES) {
+            vampireCount = Math.max(1, vampireCount * 2);
+            plugin.getChatManager().broadcastToParticipants("§6[Modifier] §eDouble Vampires is active this round!");
+        }
+
         vampireCount = Math.min(vampireCount, Math.max(1, participants.size() - 1));
 
         for (int i = 0; i < participants.size(); i++) {
@@ -1053,7 +1071,12 @@ public class VampireHuntManager {
                 defaultClassIfMissing(playerId, false);
                 teleportProtected(player, plugin.getEventArenaManager().getHunterSpawn());
                 giveRoleKit(player);
-                giveTracker(player);
+
+                // NO_COMPASS modifier: skip giving the tracker compass
+                if (modifier != VoteManager.RoundModifier.NO_COMPASS) {
+                    giveTracker(player);
+                }
+
                 player.sendTitle("§bHUNTER", "§7Kill all vampires", 0, 60, 10);
                 hunterCampReferenceLocations.put(playerId, player.getLocation().clone());
                 hunterCampReferenceMillis.put(playerId, System.currentTimeMillis());
@@ -1062,12 +1085,25 @@ public class VampireHuntManager {
         }
 
         configuredDurationSeconds = Math.max(30L, plugin.getConfig().getLong("event.duration-seconds", 600L));
+
+        // SUDDEN_DEATH modifier: halve the round timer
+        if (modifier == VoteManager.RoundModifier.SUDDEN_DEATH) {
+            configuredDurationSeconds = Math.max(30L, configuredDurationSeconds / 2);
+            plugin.getChatManager().broadcastToParticipants("§6[Modifier] §eSudden Death — timer halved!");
+        }
+
         eventEndMillis = System.currentTimeMillis() + (configuredDurationSeconds * 1000L);
 
         createBossBar(configuredDurationSeconds);
         startTrackerTask();
         startAmbianceTask();
-        startOpeningReveal();
+
+        // FOG_OF_WAR modifier: skip the opening vampire reveal
+        if (modifier != VoteManager.RoundModifier.FOG_OF_WAR) {
+            startOpeningReveal();
+        } else {
+            plugin.getChatManager().broadcastToParticipants("§6[Modifier] §eFog of War — vampires are not revealed at the start!");
+        }
 
         plugin.getChatManager().broadcastGlobal("§cA Vampire Hunt event has started!");
         for (UUID id : activePlayers) {
@@ -1114,6 +1150,11 @@ public class VampireHuntManager {
             distributePayouts(winner);
         }
 
+        // ── Fix #6 — open spectator vote for next round modifier ──────────────
+        if (!forced) {
+            voteManager.openVote();
+        }
+
         // ── Restore all players ───────────────────────────────────────────────
         Set<UUID> allParticipants = new HashSet<>();
         allParticipants.addAll(activePlayers);
@@ -1139,7 +1180,6 @@ public class VampireHuntManager {
     // ─────────────────────────────────────────────────────────────────────────
 
     private void announceRoundMVPs() {
-        // Top vampire: most kills/infections combined
         UUID topVampire = null;
         int topVampireScore = -1;
         for (UUID id : originalVampires) {
@@ -1150,7 +1190,6 @@ public class VampireHuntManager {
             }
         }
 
-        // Top hunter: most kills
         UUID topHunter = null;
         int topHunterKills = -1;
         for (UUID id : originalHunters) {
@@ -1166,7 +1205,6 @@ public class VampireHuntManager {
         final int finalVampireScore = topVampireScore;
         final int finalHunterKills = topHunterKills;
 
-        // Send titles to every active/spectator participant
         Set<UUID> audience = new HashSet<>();
         audience.addAll(activePlayers);
         audience.addAll(spectatorPlayers);
@@ -1190,7 +1228,6 @@ public class VampireHuntManager {
             p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7f, 1.0f);
         }
 
-        // Also broadcast to chat
         if (vampireMvpName != null) {
             plugin.getChatManager().broadcastToParticipants("§5Vampire MVP: §f" + vampireMvpName + " §8(kills+infections: " + finalVampireScore + ")");
         }
@@ -1211,14 +1248,6 @@ public class VampireHuntManager {
     // Fix #5 — cosmetic title unlock
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Grants a cosmetic display title to a player the first time they earn it.
-     * The title is stored via EventStatsManager and shown in chat.
-     *
-     * @param playerId   UUID of the player to reward
-     * @param title      Coloured title string, e.g. "§5Shadow Lord"
-     * @param unlockKey  Unique key used to prevent duplicate grants
-     */
     private void checkAndGrantCosmeticTitle(UUID playerId, String title, String unlockKey) {
         if (plugin.getEventStatsManager().hasCosmeticTitle(playerId, unlockKey)) {
             return;
@@ -1803,10 +1832,6 @@ public class VampireHuntManager {
         }
     }
 
-    /**
-     * Fix #1 — proximity heartbeat: BLOCK_CONDUIT_AMBIENT when a vampire is within range.
-     * killer param is nullable (null = ambient check, not a direct hit).
-     */
     private void applyCloseHeartbeat(Player hunter, Player vampire) {
         if (hunter == null || !hunter.isOnline()) {
             return;
@@ -1853,7 +1878,6 @@ public class VampireHuntManager {
             }
 
             if (hunterNearby) {
-                // Blood scent whisper — subtle vex ambient sound, low volume
                 vampire.playSound(vampire.getLocation(), Sound.ENTITY_VEX_AMBIENT, 0.35f, 0.6f);
             }
         }
@@ -2100,14 +2124,12 @@ public class VampireHuntManager {
     }
 
     private void applyKitFromConfig(Player player, ConfigurationSection kitSection) {
-        // Minimal config-driven kit loader — items list from config
         List<String> items = kitSection.getStringList("items");
         for (String raw : items) {
             try {
                 Material mat = Material.valueOf(raw.toUpperCase(Locale.ROOT));
                 player.getInventory().addItem(new ItemStack(mat));
             } catch (IllegalArgumentException ignored) {
-                // skip unknown materials
             }
         }
 
@@ -2119,7 +2141,6 @@ public class VampireHuntManager {
                 player.getInventory().setChestplate(new ItemStack(Material.valueOf(armor.get(2).toUpperCase(Locale.ROOT))));
                 player.getInventory().setHelmet(new ItemStack(Material.valueOf(armor.get(3).toUpperCase(Locale.ROOT))));
             } catch (IllegalArgumentException ignored) {
-                // fallback silently
             }
         }
     }
@@ -2200,11 +2221,11 @@ public class VampireHuntManager {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Payout
+    // Payout — fixed: getVaultEconomy() instead of getEconomy()
     // ─────────────────────────────────────────────────────────────────────────
 
     private void distributePayouts(EventWinner winner) {
-        if (plugin.getEconomy() == null) return;
+        if (plugin.getVaultEconomy() == null) return;
 
         double winnerPayout = plugin.getConfig().getDouble("event.rewards.winner-payout", 100.0D);
         double loserPayout = plugin.getConfig().getDouble("event.rewards.loser-payout", 10.0D);
@@ -2216,7 +2237,7 @@ public class VampireHuntManager {
                     || (winner == EventWinner.HUNTERS && hunters.contains(id));
             double amount = isWinner ? winnerPayout : loserPayout;
             if (amount > 0) {
-                plugin.getEconomy().depositPlayer(op, amount);
+                plugin.getVaultEconomy().depositPlayer(op, amount);
             }
 
             Player online = Bukkit.getPlayer(id);
@@ -2228,7 +2249,7 @@ public class VampireHuntManager {
         if (spectatorPayout > 0) {
             for (UUID id : payoutEligibleSpectators) {
                 OfflinePlayer op = Bukkit.getOfflinePlayer(id);
-                plugin.getEconomy().depositPlayer(op, spectatorPayout);
+                plugin.getVaultEconomy().depositPlayer(op, spectatorPayout);
                 Player online = Bukkit.getPlayer(id);
                 if (online != null && online.isOnline()) {
                     online.sendMessage(PREFIX + "§aSpectator payout: §f$" + spectatorPayout + "§a.");
