@@ -9,8 +9,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -68,6 +70,16 @@ public class EventStatsManager {
                 stats.setBestWinStreak(statsConfig.getInt(base + "best-win-streak", 0));
                 stats.setUnlockedTitles(new ArrayList<>(statsConfig.getStringList(base + "unlocked-titles")));
 
+                // ── cosmetic titles (key → display) ──────────────────────────
+                ConfigurationSection cosmeticSection = statsConfig.getConfigurationSection(base + "cosmetic-titles");
+                if (cosmeticSection != null) {
+                    Map<String, String> cosmetics = new HashMap<>();
+                    for (String cosmeticKey : cosmeticSection.getKeys(false)) {
+                        cosmetics.put(cosmeticKey, cosmeticSection.getString(cosmeticKey, ""));
+                    }
+                    stats.setCosmeticTitles(cosmetics);
+                }
+
                 cache.put(uuid, stats);
             } catch (IllegalArgumentException ignored) {
             }
@@ -99,6 +111,14 @@ public class EventStatsManager {
             statsConfig.set(base + "current-win-streak", stats.getCurrentWinStreak());
             statsConfig.set(base + "best-win-streak", stats.getBestWinStreak());
             statsConfig.set(base + "unlocked-titles", stats.getUnlockedTitles());
+
+            // ── cosmetic titles ───────────────────────────────────────────────
+            Map<String, String> cosmetics = stats.getCosmeticTitles();
+            if (!cosmetics.isEmpty()) {
+                for (Map.Entry<String, String> entry : cosmetics.entrySet()) {
+                    statsConfig.set(base + "cosmetic-titles." + entry.getKey(), entry.getValue());
+                }
+            }
         }
 
         try {
@@ -134,6 +154,45 @@ public class EventStatsManager {
     public List<UUID> getAllTrackedPlayers() {
         return new ArrayList<>(cache.keySet());
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Cosmetic title API (Fix #5 — called from VampireHuntManager)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Returns true if the player has already been granted the cosmetic title
+     * identified by {@code unlockKey} (e.g. "top-vampire-mvp").
+     */
+    public boolean hasCosmeticTitle(UUID playerId, String unlockKey) {
+        if (unlockKey == null || unlockKey.isBlank()) return false;
+        return getStats(playerId).getCosmeticTitles().containsKey(unlockKey.toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * Grants a cosmetic title to a player and persists it asynchronously.
+     *
+     * @param playerId   UUID of the recipient
+     * @param unlockKey  Unique key (e.g. "top-vampire-mvp") — prevents duplicate grants
+     * @param display    Colour-formatted display string (e.g. "§5Shadow Lord")
+     */
+    public void grantCosmeticTitle(UUID playerId, String unlockKey, String display) {
+        if (unlockKey == null || unlockKey.isBlank() || display == null) return;
+        PlayerEventStats stats = getStats(playerId);
+        stats.getCosmeticTitles().put(unlockKey.toLowerCase(Locale.ROOT), display);
+        saveAsync();
+    }
+
+    /**
+     * Returns an unmodifiable view of all cosmetic titles a player has earned.
+     * Key = unlock key, value = colour-formatted display title.
+     */
+    public Map<String, String> getCosmeticTitles(UUID playerId) {
+        return Collections.unmodifiableMap(getStats(playerId).getCosmeticTitles());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Stat mutators
+    // ─────────────────────────────────────────────────────────────────────────
 
     public void incrementEventsPlayed(UUID playerId) {
         PlayerEventStats stats = getStats(playerId);
@@ -204,6 +263,10 @@ public class EventStatsManager {
         return titles.get(titles.size() - 1);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Progression unlock checks (existing system — untouched)
+    // ─────────────────────────────────────────────────────────────────────────
+
     private void checkUnlocks(UUID playerId, PlayerEventStats stats) {
         unlockIfEligible(playerId, stats,
                 "night-stalker",
@@ -260,6 +323,10 @@ public class EventStatsManager {
         return false;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Inner data class
+    // ─────────────────────────────────────────────────────────────────────────
+
     public static class PlayerEventStats {
         private int wins;
         private int losses;
@@ -272,6 +339,9 @@ public class EventStatsManager {
         private int currentWinStreak;
         private int bestWinStreak;
         private List<String> unlockedTitles = new ArrayList<>();
+
+        /** key = unlockKey (e.g. "top-vampire-mvp"), value = colour display string */
+        private Map<String, String> cosmeticTitles = new HashMap<>();
 
         public int getWins() { return wins; }
         public void setWins(int wins) { this.wins = wins; }
@@ -305,5 +375,8 @@ public class EventStatsManager {
 
         public List<String> getUnlockedTitles() { return unlockedTitles; }
         public void setUnlockedTitles(List<String> unlockedTitles) { this.unlockedTitles = unlockedTitles; }
+
+        public Map<String, String> getCosmeticTitles() { return cosmeticTitles; }
+        public void setCosmeticTitles(Map<String, String> cosmeticTitles) { this.cosmeticTitles = cosmeticTitles; }
     }
 }
