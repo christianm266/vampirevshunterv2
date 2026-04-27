@@ -211,7 +211,6 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
             }
 
             default -> {
-                // Suggest the closest valid subcommand instead of a bare error
                 String suggestion = findClosestSub(sub);
                 if (suggestion != null) {
                     chat.sendPrefixed(sender, "\u00a7cUnknown subcommand \u00a7f'" + args[0] + "'\u00a7c. Did you mean \u00a7f/" + label + " " + suggestion + "\u00a7c?");
@@ -225,7 +224,7 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
     }
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Closest subcommand suggestion (simple prefix match)
+    // Closest subcommand suggestion
     // ───────────────────────────────────────────────────────────────────────────
 
     private static final List<String> ALL_SUBS = List.of(
@@ -237,11 +236,9 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
     private String findClosestSub(String input) {
         if (input == null || input.isBlank()) return null;
         String lower = input.toLowerCase(Locale.ROOT);
-        // prefix match first
         for (String s : ALL_SUBS) {
             if (s.startsWith(lower)) return s;
         }
-        // contains match fallback
         for (String s : ALL_SUBS) {
             if (s.contains(lower)) return s;
         }
@@ -249,7 +246,7 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
     }
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Help — fully role-aware
+    // Help — role-aware
     // ───────────────────────────────────────────────────────────────────────────
 
     private void sendHelp(CommandSender sender, String label, VampireHuntManager manager) {
@@ -267,29 +264,32 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("  \u00a74\u00a7lVampire Hunt \u00a78\u2014 \u00a77Commands  \u00a78[\u00a7f/" + label + "\u00a78]");
         sender.sendMessage("");
 
-        // ── Role/State context banner ──────────────────────────────────────────
         if (isVampire) {
-            String classLine = myClass != RoleClass.NONE ? "  \u00a78Class: \u00a7f" + myClass.getDisplayName() : "  \u00a78No class selected.");
-            sender.sendMessage("  \u00a75\u25cf \u00a7lVAMPIRE\u00a7r\u00a75 — Convert all hunters to win the round.");
+            // FIX: was missing closing quote — ternary now properly formed
+            String classLine = myClass != RoleClass.NONE
+                    ? "  \u00a78Class: \u00a7f" + myClass.getDisplayName()
+                    : "  \u00a78No class selected.";
+            sender.sendMessage("  \u00a75\u25cf \u00a7lVAMPIRE\u00a7r\u00a75 \u2014 Convert all hunters to win the round.");
             sender.sendMessage(classLine);
             sender.sendMessage("  \u00a77Use \u00a7f/" + label + " class\u00a77 to switch class. Use \u00a7f/" + label + " ability\u00a77 to activate it.");
         } else if (isHunter) {
-            String classLine = myClass != RoleClass.NONE ? "  \u00a78Class: \u00a7f" + myClass.getDisplayName() : "  \u00a78No class selected.";
-            sender.sendMessage("  \u00a7b\u25cf \u00a7lHUNTER\u00a7r\u00a7b — Kill all vampires to win the round.");
+            String classLine = myClass != RoleClass.NONE
+                    ? "  \u00a78Class: \u00a7f" + myClass.getDisplayName()
+                    : "  \u00a78No class selected.";
+            sender.sendMessage("  \u00a7b\u25cf \u00a7lHUNTER\u00a7r\u00a7b \u2014 Kill all vampires to win the round.");
             sender.sendMessage(classLine);
             sender.sendMessage("  \u00a77Use \u00a7f/" + label + " class\u00a77 to switch class. Use \u00a7f/" + label + " ability\u00a77 to activate it.");
         } else if (isSpectator) {
-            sender.sendMessage("  \u00a77\u25cf \u00a7lSPECTATING\u00a7r\u00a77 — Watch the round from above.");
+            sender.sendMessage("  \u00a77\u25cf \u00a7lSPECTATING\u00a7r\u00a77 \u2014 Watch the round from above.");
             sender.sendMessage("  \u00a77Vote on the next round modifier, or teleport to a player.");
         } else if (inQueue) {
-            sender.sendMessage("  \u00a7e\u25cf \u00a7lQUEUED\u00a7r\u00a7e — Waiting in lobby. Use \u00a7f/" + label + " ready\u00a7e to confirm.");
+            sender.sendMessage("  \u00a7e\u25cf \u00a7lQUEUED\u00a7r\u00a7e \u2014 Waiting in lobby. Use \u00a7f/" + label + " ready\u00a7e to confirm.");
         } else {
             sender.sendMessage("  \u00a77Vampires infect hunters. Hunters must eliminate all vampires to win.");
             sender.sendMessage("  \u00a77Use \u00a7f/" + label + " info\u00a77 for full rules and modifiers.");
         }
         sender.sendMessage("");
 
-        // ── Section: Joining (only shown if NOT active in a round) ─────────────
         if (!isActive) {
             sender.sendMessage("\u00a76\u00a7lJoining & Queue");
             sender.sendMessage(ARROW + "\u00a7f/" + label + " join     \u00a78\u2502 \u00a77Enter the event queue");
@@ -299,7 +299,6 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("");
         }
 
-        // ── Section: Classes — only what's relevant to your role ───────────────
         if (isActive || !isSpectator) {
             if (isVampire) {
                 sender.sendMessage("\u00a75\u00a7lVampire Classes");
@@ -308,7 +307,6 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("\u00a7b\u00a7lHunter Classes");
                 sendHunterClassLines(sender, label);
             } else {
-                // Not yet in a round — show both with a header
                 sender.sendMessage("\u00a76\u00a7lClasses  \u00a78(\u00a77choose before the round starts\u00a78)");
                 sender.sendMessage(ARROW + "\u00a7f/" + label + " class <name>  \u00a78\u2502 \u00a77Select your class");
                 sender.sendMessage(ARROW + "\u00a7f/" + label + " ability       \u00a78\u2502 \u00a77Use your active class ability in-game");
@@ -320,7 +318,6 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("");
         }
 
-        // ── Section: In-event actions (only shown when active) ─────────────────
         if (isActive) {
             sender.sendMessage("\u00a76\u00a7lIn-Round Commands");
             sender.sendMessage(ARROW + "\u00a7f/" + label + " class <name>  \u00a78\u2502 \u00a77Switch your class mid-round");
@@ -330,7 +327,6 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("");
         }
 
-        // ── Section: Spectator commands (shown when spectating or voting open) ──
         if (isSpectator) {
             sender.sendMessage("\u00a76\u00a7lSpectator Commands");
             sender.sendMessage(ARROW + "\u00a7f/" + label + " specteleport next      \u00a78\u2502 \u00a77Cycle to the next active player");
@@ -346,7 +342,6 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("");
         }
 
-        // ── Section: Info & Stats (always shown) ───────────────────────────────
         sender.sendMessage("\u00a76\u00a7lInfo & Stats");
         sender.sendMessage(ARROW + "\u00a7f/" + label + " status          \u00a78\u2502 \u00a77Current phase and team counts");
         sender.sendMessage(ARROW + "\u00a7f/" + label + " info            \u00a78\u2502 \u00a77Full rules, powers, and modifiers");
@@ -359,7 +354,7 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
     }
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Class help — role-aware, shown when /vhunt class used with no argument
+    // Class help
     // ───────────────────────────────────────────────────────────────────────────
 
     private void sendClassHelp(Player player, String label, VampireHuntManager manager) {
@@ -375,19 +370,16 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("");
 
         if (isVampire) {
-            // Vampire only
             player.sendMessage("\u00a75\u00a7lVampire Classes");
             sendVampireClassLines(player, label);
             player.sendMessage("");
             player.sendMessage("  \u00a77Usage: \u00a7f/" + label + " class <stalker|brute>");
         } else if (isHunter) {
-            // Hunter only
             player.sendMessage("\u00a7b\u00a7lHunter Classes");
             sendHunterClassLines(player, label);
             player.sendMessage("");
             player.sendMessage("  \u00a77Usage: \u00a7f/" + label + " class <tracker|priest>");
         } else {
-            // Not yet in a round — show both
             player.sendMessage("\u00a75\u00a7lVampire Classes");
             sendVampireClassLines(player, label);
             player.sendMessage("");
@@ -416,7 +408,7 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
     }
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Vote help — shown when /vhunt vote is used with no argument
+    // Vote help
     // ───────────────────────────────────────────────────────────────────────────
 
     private void sendVoteHelp(Player player, String label, VoteManager voteManager) {
@@ -427,8 +419,8 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("");
         player.sendMessage(ARROW + "\u00a7fdouble     \u00a78\u2502 \u00a77Double the number of starting vampires");
         player.sendMessage(ARROW + "\u00a7fnocompass  \u00a78\u2502 \u00a77Hunters do not receive a tracker compass");
-        player.sendMessage(ARROW + "\u00a7fsd         \u00a78\u2502 \u00a77Sudden Death — round timer is halved");
-        player.sendMessage(ARROW + "\u00a7ffog        \u00a78\u2502 \u00a77Fog of War — no opening vampire reveal");
+        player.sendMessage(ARROW + "\u00a7fsd         \u00a78\u2502 \u00a77Sudden Death \u2014 round timer is halved");
+        player.sendMessage(ARROW + "\u00a7ffog        \u00a78\u2502 \u00a77Fog of War \u2014 no opening vampire reveal");
         player.sendMessage(ARROW + "\u00a7fnone       \u00a78\u2502 \u00a77No modifier (normal round)");
         player.sendMessage("");
         player.sendMessage("  \u00a77Current tally: \u00a7f" + voteManager.getTallyDisplay());
@@ -455,13 +447,13 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ARROW + "\u00a77Permanent \u00a7fNight Vision\u00a77.");
         sender.sendMessage(ARROW + "\u00a77Invisible at round start (\u226560 s). \u00a7cArmor is still visible!");
         sender.sendMessage(ARROW + "\u00a77Gain brief invisibility after each kill.");
-        sender.sendMessage(ARROW + "\u00a77Killing a hunter \u00a75infects\u00a77 them — they switch to the vampire team.");
+        sender.sendMessage(ARROW + "\u00a77Killing a hunter \u00a75infects\u00a77 them \u2014 they switch to the vampire team.");
         sender.sendMessage("");
 
         sender.sendMessage("\u00a76\u00a7lHunter Advantages");
         sender.sendMessage(ARROW + "\u00a77Compass automatically tracks the nearest vampire.");
         sender.sendMessage(ARROW + "\u00a77Heartbeat sound when a vampire is within 12 blocks.");
-        sender.sendMessage(ARROW + "\u00a77Staying in one spot too long causes \u00a7cGlowing\u00a77 — move around!");
+        sender.sendMessage(ARROW + "\u00a77Staying in one spot too long causes \u00a7cGlowing\u00a77 \u2014 move around!");
         sender.sendMessage("");
 
         sender.sendMessage("\u00a76\u00a7lReady Check");
@@ -473,7 +465,7 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("\u00a76\u00a7lRound Modifiers  \u00a78(\u00a77voted by spectators between rounds\u00a78)");
         sender.sendMessage(ARROW + "\u00a7fdouble     \u00a78\u2014 \u00a77Double starting vampires");
         sender.sendMessage(ARROW + "\u00a7fnocompass  \u00a78\u2014 \u00a77Hunters start without a tracker compass");
-        sender.sendMessage(ARROW + "\u00a7fsd         \u00a78\u2014 \u00a77Sudden Death mode — timer halved");
+        sender.sendMessage(ARROW + "\u00a7fsd         \u00a78\u2014 \u00a77Sudden Death mode \u2014 timer halved");
         sender.sendMessage(ARROW + "\u00a7ffog        \u00a78\u2014 \u00a77No opening vampire reveal");
         sender.sendMessage("");
 
@@ -559,7 +551,6 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
                 subs.add("vote");
                 subs.add("leave");
             }
-            // vote shown to everyone (they'll get a friendly message if no vote is open)
             if (!isSpectator) subs.add("vote");
 
             return filter(args[0], subs.toArray(new String[0]));
@@ -567,7 +558,7 @@ public class VampireHuntCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 2) {
             return switch (args[0].toLowerCase(Locale.ROOT)) {
-                case "class"        -> {
+                case "class" -> {
                     boolean isVampire = isPlayer && manager.isVampire(pid);
                     boolean isHunter  = isPlayer && manager.isHunter(pid);
                     if (isVampire)       yield filter(args[1], "stalker", "brute");

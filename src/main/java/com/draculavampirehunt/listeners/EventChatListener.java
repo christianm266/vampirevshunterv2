@@ -1,1 +1,90 @@
-cGFja2FnZSBjb20uZHJhY3VsYXZhbXBpcmVodW50Lmxpc3RlbmVyczsKCmltcG9ydCBjb20uZHJhY3VsYXZhbXBpcmVodW50LkRyYWN1bGFWYW1waXJlSHVudDsKaW1wb3J0IGNvbS5kcmFjdWxhdmFtcGlyZWh1bnQubWFuYWdlcnMuVmFtcGlyZUh1bnRNYW5hZ2VyOwppbXBvcnQgaW8ucGFwZXJtYy5wYXBlci5ldmVudC5wbGF5ZXIuQXN5bmNDaGF0RXZlbnQ7CmltcG9ydCBuZXQua3lvcmkuYWR2ZW50dXJlLnRleHQuQ29tcG9uZW50OwppbXBvcnQgbmV0Lmt5b3JpLmFkdmVudHVyZS50ZXh0LmZvcm1hdC5OYW1lZFRleHRDb2xvcjsKaW1wb3J0IG5ldC5reW9yaS5hZHZlbnR1cmUudGV4dC5mb3JtYXQuVGV4dERlY29yYXRpb247CmltcG9ydCBuZXQua3lvcmkuYWR2ZW50dXJlLnRleHQuc2VyaWFsaXplci5sZWdhY3kuTGVnYWN5Q29tcG9uZW50U2VyaWFsaXplcjsKaW1wb3J0IG9yZy5idWtraXQuZW50aXR5LlBsYXllcjsKaW1wb3J0IG9yZy5idWtraXQuZXZlbnQuRXZlbnRIYW5kbGVyOwppbXBvcnQgb3JnLmJ1a2tpdC5ldmVudC5FdmVudFByaW9yaXR5OwppbXBvcnQgb3JnLmJ1a2tpdC5ldmVudC5MaXN0ZW5lcjsKCi8qKgogKiBBcHBlbmRzIGEgY29sb3VyZWQgcm9sZSB0YWcgKFtWYW1waXJlXSAvIFtIdW50ZXJdIC8gW1NwZWN0YXRvcl0gLyBbUXVldWVdKQogKiBpbiBmcm9udCBvZiBhbnkgY2hhdCBtZXNzYWdlIHNlbnQgYnkgYW4gZXZlbnQgcGFydGljaXBhbnQuCiAqCiAqIFVzZXMgdGhlIG1vZGVybiBQYXBlciBBc3luY0NoYXRFdmVudCArIEFkdmVudHVyZSBDb21wb25lbnQgQVBJCiAqIHJlcXVpcmVkIGZvciBhcGktdmVyc2lvbiAxLjE5KyAoZGVwcmVjYXRlZCBBc3luY1BsYXllckNoYXRFdmVudCByZW1vdmVkKS4KICovCkBTdXBwcmVzc1dhcm5pbmdzKCJ1bnN0YWJsZSIpCnB1YmxpYyBjbGFzcyBFdmVudENoYXRMaXN0ZW5lciBpbXBsZW1lbnRzIExpc3RlbmVyIHsKCiAgICBwcml2YXRlIHN0YXRpYyBmaW5hbCBMZWdhY3lDb21wb25lbnRTZXJpYWxpemVyIExFR0FDWSA9CiAgICAgICAgICAgIExlZ2FjeUNvbXBvbmVudFNlcmlhbGl6ZXIubGVnYWN5U2VjdGlvbigpOwoKICAgIHByaXZhdGUgZmluYWwgRHJhY3VsYVZhbXBpcmVIdW50IHBsdWdpbjsKCiAgICBwdWJsaWMgRXZlbnRDaGF0TGlzdGVuZXIoRHJhY3VsYVZhbXBpcmVIdW50IHBsdWdpbikgewogICAgICAgIHRoaXMucGx1Z2luID0gcGx1Z2luOwogICAgfQoKICAgIC8qKgogICAgICogSElHSEVTVCBwcmlvcml0eSBzbyBvdXIgZm9ybWF0IHJ1bnMgYWZ0ZXIgbW9zdCBjaGF0IHBsdWdpbnMgYnV0IGNhbgogICAgICogc3RpbGwgYmUgb3ZlcnJpZGRlbiBieSBhIE1PTklUT1ItcHJpb3JpdHkgY2hhdC1sb2dnZXIuCiAgICAgKi8KICAgIEBFdmVudEhhbmRsZXIocHJpb3JpdHkgPSBFdmVudFByaW9yaXR5LkhJR0hFU1QpCiAgICBwdWJsaWMgdm9pZCBvbkNoYXQoQXN5bmNDaGF0RXZlbnQgZXZlbnQpIHsKICAgICAgICBQbGF5ZXIgcGxheWVyID0gZXZlbnQuZ2V0UGxheWVyKCk7CiAgICAgICAgVmFtcGlyZUh1bnRNYW5hZ2VyIG1hbmFnZXIgPSBwbHVnaW4uZ2V0VmFtcGlyZUh1bnRNYW5hZ2VyKCk7CgogICAgICAgIGlmIChtYW5hZ2VyID09IG51bGwpIHsKICAgICAgICAgICAgcmV0dXJuOwogICAgICAgIH0KCiAgICAgICAgaWYgKCFtYW5hZ2VyLmlzRXZlbnRQYXJ0aWNpcGFudChwbGF5ZXIuZ2V0VW5pcXVlSWQoKSkpIHsKICAgICAgICAgICAgcmV0dXJuOwogICAgICAgIH0KCiAgICAgICAgLy8gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogICAgICAgIC8vIEJ1aWxkIHRoZSBBZHZlbnR1cmUgY29tcG9uZW50IHJvbGUgdGFnCiAgICAgICAgLy8gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKICAgICAgICBDb21wb25lbnQgdGFnOwogICAgICAgIGlmIChtYW5hZ2VyLmlzVmFtcGlyZShwbGF5ZXIuZ2V0VW5pcXVlSWQoKSkpIHsKICAgICAgICAgICAgdGFnID0gQ29tcG9uZW50LnRleHQoIlsiLCBOYW1lZFRleHRDb2xvci5EQVJLX0dSQVkpCiAgICAgICAgICAgICAgICAgICAgLmFwcGVuZChDb21wb25lbnQudGV4dCgiVmFtcGlyZSIsIE5hbWVkVGV4dENvbG9yLkRBUktfUFVSUExFLCBUZXh0RGVjb3JhdGlvbi5CT0xEKSkKICAgICAgICAgICAgICAgICAgICAuYXBwZW5kKENvbXBvbmVudC50ZXh0KCJdICIsIE5hbWVkVGV4dENvbG9yLkRBUktfR1JBWSkpOwoKICAgICAgICB9IGVsc2UgaWYgKG1hbmFnZXIuaXNIdW50ZXIocGxheWVyLmdldFVuaXF1ZUlkKCkpKSB7CiAgICAgICAgICAgIHRhZyA9IENvbXBvbmVudC50ZXh0KCJbIiwgTmFtZWRUZXh0Q29sb3IuREFSS19HUkFZKQogICAgICAgICAgICAgICAgICAgIC5hcHBlbmQoQ29tcG9uZW50LnRleHQoIkh1bnRlciIsIE5hbWVkVGV4dENvbG9yLkFRVUEsIFRleHREZWNvcmF0aW9uLkJPTEQpKQogICAgICAgICAgICAgICAgICAgIC5hcHBlbmQoQ29tcG9uZW50LnRleHQoIl0gIiwgTmFtZWRUZXh0Q29sb3IuREFSS19HUkFZKSk7CgogICAgICAgIH0gZWxzZSBpZiAobWFuYWdlci5pc1NwZWN0YXRvclBhcnRpY2lwYW50KHBsYXllci5nZXRVbmlxdWVJZCgpKSkgewogICAgICAgICAgICB0YWcgPSBDb21wb25lbnQudGV4dCgiWyIsIE5hbWVkVGV4dENvbG9yLkRBUktfR1JBWSkKICAgICAgICAgICAgICAgICAgICAuYXBwZW5kKENvbXBvbmVudC50ZXh0KCJTcGVjdGF0b3IiLCBOYW1lZFRleHRDb2xvci5HUkFZKSkKICAgICAgICAgICAgICAgICAgICAuYXBwZW5kKENvbXBvbmVudC50ZXh0KCJdICIsIE5hbWVkVGV4dENvbG9yLkRBUktfR1JBWSkpOwoKICAgICAgICB9IGVsc2UgewogICAgICAgICAgICAvLyBJbiBxdWV1ZSBidXQgbm90IHlldCBhc3NpZ25lZCBhIHJvbGUKICAgICAgICAgICAgdGFnID0gQ29tcG9uZW50LnRleHQoIlsiLCBOYW1lZFRleHRDb2xvci5EQVJLX0dSQVkpCiAgICAgICAgICAgICAgICAgICAgLmFwcGVuZChDb21wb25lbnQudGV4dCgiUXVldWUiLCBOYW1lZFRleHRDb2xvci5ZRUxMT1cpKQogICAgICAgICAgICAgICAgICAgIC5hcHBlbmQoQ29tcG9uZW50LnRleHQoIl0gIiwgTmFtZWRUZXh0Q29sb3IuREFSS19HUkFZKSk7CiAgICAgICAgfQoKICAgICAgICAvLyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAgICAgICAgLy8gQnVpbGQgImRpc3BsYXlOYW1lOiBtZXNzYWdlIiBhbmQgcHJlcGVuZCB0aGUgdGFnCiAgICAgICAgLy8gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKICAgICAgICBDb21wb25lbnQgbmFtZSA9IHBsYXllci5kaXNwbGF5TmFtZSgpOwogICAgICAgIENvbXBvbmVudCBzZXBhcmF0b3IgPSBDb21wb25lbnQudGV4dCgiOiAiLCBOYW1lZFRleHRDb2xvci5EQVJLX0dSQVkpOwogICAgICAgIENvbXBvbmVudCBib2R5ID0gZXZlbnQubWVzc2FnZSgpLmNvbG9yKE5hbWVkVGV4dENvbG9yLldISVRFKTsKCiAgICAgICAgZXZlbnQucmVuZGVyZXIoKHNvdXJjZSwgc291cmNlRGlzcGxheU5hbWUsIG1lc3NhZ2UsIHZpZXdlcikgLT4KICAgICAgICAgICAgICAgIHRhZy5hcHBlbmQobmFtZSkuYXBwZW5kKHNlcGFyYXRvcikuYXBwZW5kKGJvZHkpCiAgICAgICAgKTsKICAgIH0KfQo=
+package com.draculavampirehunt.listeners;
+
+import com.draculavampirehunt.DraculaVampireHunt;
+import com.draculavampirehunt.managers.VampireHuntManager;
+import io.papermc.paper.event.player.AsyncChatEvent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+
+/**
+ * Appends a coloured role tag ([Vampire] / [Hunter] / [Spectator] / [Queue])
+ * in front of any chat message sent by an event participant.
+ *
+ * Uses the modern Paper AsyncChatEvent + Adventure Component API
+ * required for api-version 1.19+ (deprecated AsyncPlayerChatEvent removed).
+ */
+@SuppressWarnings("unstable")
+public class EventChatListener implements Listener {
+
+    private static final LegacyComponentSerializer LEGACY =
+            LegacyComponentSerializer.legacySection();
+
+    private final DraculaVampireHunt plugin;
+
+    public EventChatListener(DraculaVampireHunt plugin) {
+        this.plugin = plugin;
+    }
+
+    /**
+     * HIGHEST priority so our format runs after most chat plugins but can
+     * still be overridden by a MONITOR-priority chat-logger.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onChat(AsyncChatEvent event) {
+        Player player = event.getPlayer();
+        VampireHuntManager manager = plugin.getVampireHuntManager();
+
+        if (manager == null) {
+            return;
+        }
+
+        if (!manager.isEventParticipant(player.getUniqueId())) {
+            return;
+        }
+
+        // ----------------------------------------------------------------
+        // Build the Adventure component role tag
+        // ----------------------------------------------------------------
+
+        Component tag;
+        if (manager.isVampire(player.getUniqueId())) {
+            tag = Component.text("[", NamedTextColor.DARK_GRAY)
+                    .append(Component.text("Vampire", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD))
+                    .append(Component.text("] ", NamedTextColor.DARK_GRAY));
+
+        } else if (manager.isHunter(player.getUniqueId())) {
+            tag = Component.text("[", NamedTextColor.DARK_GRAY)
+                    .append(Component.text("Hunter", NamedTextColor.AQUA, TextDecoration.BOLD))
+                    .append(Component.text("] ", NamedTextColor.DARK_GRAY));
+
+        } else if (manager.isSpectatorParticipant(player.getUniqueId())) {
+            tag = Component.text("[", NamedTextColor.DARK_GRAY)
+                    .append(Component.text("Spectator", NamedTextColor.GRAY))
+                    .append(Component.text("] ", NamedTextColor.DARK_GRAY));
+
+        } else {
+            // In queue but not yet assigned a role
+            tag = Component.text("[", NamedTextColor.DARK_GRAY)
+                    .append(Component.text("Queue", NamedTextColor.YELLOW))
+                    .append(Component.text("] ", NamedTextColor.DARK_GRAY));
+        }
+
+        // ----------------------------------------------------------------
+        // Build "displayName: message" and prepend the tag
+        // ----------------------------------------------------------------
+
+        Component name = player.displayName();
+        Component separator = Component.text(": ", NamedTextColor.DARK_GRAY);
+        Component body = event.message().color(NamedTextColor.WHITE);
+
+        event.renderer((source, sourceDisplayName, message, viewer) ->
+                tag.append(name).append(separator).append(body)
+        );
+    }
+}
