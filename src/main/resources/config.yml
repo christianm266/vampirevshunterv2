@@ -166,10 +166,6 @@ event:
       use-bossbar-alert: true
       damage-final-stage: true
 
-  # ── Vote Modifiers (Fix #6 — VoteManager.java) ────────────────────────────
-  # Spectators vote during the post-round window (/vhunt vote <option>).
-  # The winning modifier is applied at the start of the next round.
-  # Set enabled: false to remove a modifier from the vote pool entirely.
   vote-modifiers:
     vote-duration-seconds: 30
     double-vampires:
@@ -189,43 +185,22 @@ event:
       display-name: "Fog of War"
       description: "Vampires opening reveal is skipped — hunters start blind."
 
+  # ── Kits ──────────────────────────────────────────────────────────────────
+  # Use plain material names only (no Bukkit serialization blocks).
+  # All names must be valid 1.13+ Material enum values.
   kits:
     vampire:
       armor:
-        helmet:
-          ==: org.bukkit.inventory.ItemStack
-          type: LEATHER_HELMET
-        chestplate:
-          ==: org.bukkit.inventory.ItemStack
-          type: LEATHER_CHESTPLATE
-        leggings:
-          ==: org.bukkit.inventory.ItemStack
-          type: LEATHER_LEGGINGS
-        boots:
-          ==: org.bukkit.inventory.ItemStack
-          type: LEATHER_BOOTS
+        helmet: LEATHER_HELMET
+        chestplate: LEATHER_CHESTPLATE
+        leggings: LEATHER_LEGGINGS
+        boots: LEATHER_BOOTS
 
-      offhand:
-        ==: org.bukkit.inventory.ItemStack
-        type: TOTEM_OF_UNDYING
-
-      items:
-        - ==: org.bukkit.inventory.ItemStack
-          type: IRON_SWORD
-          amount: 1
-        - ==: org.bukkit.inventory.ItemStack
-          type: COOKED_BEEF
-          amount: 16
+      offhand: TOTEM_OF_UNDYING
 
       slots:
-        "0":
-          ==: org.bukkit.inventory.ItemStack
-          type: IRON_SWORD
-          amount: 1
-        "1":
-          ==: org.bukkit.inventory.ItemStack
-          type: COOKED_BEEF
-          amount: 16
+        0: IRON_SWORD:1
+        1: COOKED_BEEF:16
 
       effects:
         NIGHT_VISION:
@@ -237,56 +212,19 @@ event:
 
     hunter:
       armor:
-        helmet:
-          ==: org.bukkit.inventory.ItemStack
-          type: IRON_HELMET
-        chestplate:
-          ==: org.bukkit.inventory.ItemStack
-          type: IRON_CHESTPLATE
-        leggings:
-          ==: org.bukkit.inventory.ItemStack
-          type: IRON_LEGGINGS
-        boots:
-          ==: org.bukkit.inventory.ItemStack
-          type: IRON_BOOTS
+        helmet: IRON_HELMET
+        chestplate: IRON_CHESTPLATE
+        leggings: IRON_LEGGINGS
+        boots: IRON_BOOTS
 
       offhand: null
 
-      items:
-        - ==: org.bukkit.inventory.ItemStack
-          type: IRON_SWORD
-          amount: 1
-        - ==: org.bukkit.inventory.ItemStack
-          type: BOW
-          amount: 1
-        - ==: org.bukkit.inventory.ItemStack
-          type: ARROW
-          amount: 24
-        - ==: org.bukkit.inventory.ItemStack
-          type: COOKED_BEEF
-          amount: 16
-
       slots:
-        "0":
-          ==: org.bukkit.inventory.ItemStack
-          type: IRON_SWORD
-          amount: 1
-        "1":
-          ==: org.bukkit.inventory.ItemStack
-          type: BOW
-          amount: 1
-        "2":
-          ==: org.bukkit.inventory.ItemStack
-          type: ARROW
-          amount: 24
-        "3":
-          ==: org.bukkit.inventory.ItemStack
-          type: COMPASS
-          amount: 1
-        "4":
-          ==: org.bukkit.inventory.ItemStack
-          type: COOKED_BEEF
-          amount: 16
+        0: IRON_SWORD:1
+        1: BOW:1
+        2: ARROW:24
+        3: COMPASS:1
+        4: COOKED_BEEF:16
 
       effects:
         SPEED:
