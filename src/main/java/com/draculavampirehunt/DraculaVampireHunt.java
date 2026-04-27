@@ -2,8 +2,13 @@ package com.draculavampirehunt;
 
 import com.draculavampirehunt.commands.VampireHuntAdminCommand;
 import com.draculavampirehunt.commands.VampireHuntCommand;
+import com.draculavampirehunt.listeners.EventChatListener;
 import com.draculavampirehunt.listeners.EventCombatListener;
+import com.draculavampirehunt.listeners.EventDeathListener;
 import com.draculavampirehunt.listeners.EventRestrictionListener;
+import com.draculavampirehunt.listeners.PlayerJoinRestoreListener;
+import com.draculavampirehunt.listeners.PlayerQuitRestoreListener;
+import com.draculavampirehunt.listeners.PlayerRespawnListener;
 import com.draculavampirehunt.managers.ChatManager;
 import com.draculavampirehunt.managers.EconomyService;
 import com.draculavampirehunt.managers.EventArenaManager;
@@ -90,6 +95,11 @@ public class DraculaVampireHunt extends JavaPlugin {
     private void registerListeners() {
         Bukkit.getPluginManager().registerEvents(new EventRestrictionListener(this), this);
         Bukkit.getPluginManager().registerEvents(new EventCombatListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new EventDeathListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new PlayerRespawnListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new PlayerQuitRestoreListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new PlayerJoinRestoreListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new EventChatListener(this), this);
     }
 
     private void setupVaultEconomy() {
