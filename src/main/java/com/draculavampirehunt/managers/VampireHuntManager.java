@@ -591,7 +591,8 @@ public class VampireHuntManager {
             hunter.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, slownessSeconds * 20, 0, false, false, false));
         }
 
-        hunter.playSound(hunter.getLocation(), Sound.AMBIENT_CAVE.value(), 0.6f, 0.8f);
+        // Fix: Sound.AMBIENT_CAVE is an enum constant — no .value() call needed
+        hunter.playSound(hunter.getLocation(), Sound.AMBIENT_CAVE, 0.6f, 0.8f);
         hunter.sendTitle("", "§8The darkness closes in...", 0, 20, 5);
     }
 
@@ -1538,7 +1539,8 @@ public class VampireHuntManager {
                 player.sendMessage(PREFIX + message);
             }
 
-            if (!leftEvent && spectatorEnabled && plugin.getEventArenaManager().hasSpectatorSpawn()) {
+            // Fix: replaced hasSpectatorSpawn() with getSpectatorSpawn() != null
+            if (!leftEvent && spectatorEnabled && plugin.getEventArenaManager().getSpectatorSpawn() != null) {
                 sendToSpectatorMode(player, true);
                 return;
             }
