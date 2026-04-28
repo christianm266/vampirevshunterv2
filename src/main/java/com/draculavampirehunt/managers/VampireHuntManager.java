@@ -921,8 +921,6 @@ public class VampireHuntManager {
     }
 
     private void startEvent() {
-        // FIX: use queuedPlayers (who are present at start) instead of readyPlayers
-        // (which may have been cleared already), and verify arena spawns are set.
         int minPlayers = Math.max(2, plugin.getConfig().getInt("event.min-players", 2));
         if (queuedPlayers.size() < minPlayers || !plugin.getEventArenaManager().hasArenaReady()) {
             plugin.getChatManager().broadcastToParticipants("§cCannot start event: arena spawns not configured or not enough players.");
@@ -938,8 +936,6 @@ public class VampireHuntManager {
         phase = EventPhase.ACTIVE;
         eventStartMillis = System.currentTimeMillis();
 
-        // Use queuedPlayers snapshot — readyPlayers is unreliable here as it
-        // may have been partially cleared during the countdown phase.
         List<UUID> participants = new ArrayList<>(queuedPlayers);
         queuedPlayers.clear();
         readyPlayers.clear();
@@ -990,8 +986,6 @@ public class VampireHuntManager {
             }
         }
 
-        // FIX: if after assigning roles one team is empty (e.g. all players offline),
-        // abort gracefully instead of ending with a false win condition.
         if (vampires.isEmpty() || hunters.isEmpty()) {
             plugin.getLogger().warning("Event aborted after role assignment: vampires=" + vampires.size() + ", hunters=" + hunters.size() + ". Not enough online players.");
             plugin.getChatManager().broadcastGlobal("§cEvent cancelled: not enough online players to form both teams.");
@@ -1030,8 +1024,6 @@ public class VampireHuntManager {
                 + ", vampires=" + vampires.size()
                 + ", hunters=" + hunters.size());
 
-        // FIX: delay win-condition check by 1 second so all role assignments
-        // and teleports have fully processed before evaluation.
         Bukkit.getScheduler().runTaskLater(plugin, this::checkWinConditions, 20L);
     }
 
@@ -1553,9 +1545,6 @@ public class VampireHuntManager {
         openingRevealEndsAt = 0L;
     }
 
-<<<<<<< Updated upstream
-    private void revealNearbyVampires(Player revealer, double radius, int durationTicks) 
-=======
     private void revealNearbyVampires(Player revealer, double radius, int durationTicks) {
         for (UUID vid : vampires) {
             Player v = Bukkit.getPlayer(vid);
@@ -1887,4 +1876,3 @@ public class VampireHuntManager {
         return offline.getName() != null ? offline.getName() : uuid.toString().substring(0, 8);
     }
 }
->>>>>>> Stashed changes
