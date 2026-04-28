@@ -1577,48 +1577,46 @@ public class VampireHuntManager {
             Player v = Bukkit.getPlayer(vid);
             if (v == null || !v.isOnline()) continue;
 
-            Long cooldownUntil = hunterCampRevealCooldownUntil.get(vid);
-            if (cooldownUntil != null && now < cooldownUntil) continue;
+            Long cooldownUntil = hunterCampRevealCooldownUntil.getOrDefault(vid, 0L);
+            if (now < cooldownUntil) continue;
 
             Location refLoc = hunterCampReferenceLocations.get(vid);
-            Long refMillis = hunterCampReferenceMillis.get(vid);
+            Long refTime = hunterCampReferenceMillis.get(vid);
+            int stage = hunterCampStage.getOrDefault(vid, 0);
 
-            if (refLoc == null || refMillis == null) {
+            if (refLoc == null || refTime == null) {
                 hunterCampReferenceLocations.put(vid, v.getLocation().clone());
                 hunterCampReferenceMillis.put(vid, now);
+                hunterCampStage.put(vid, 0);
                 continue;
             }
 
             double dist = v.getLocation().distanceSquared(refLoc);
-            if (dist > campRadius * campRadius) {
-                hunterCampReferenceLocations.put(vid, v.getLocation().clone());
-                hunterCampReferenceMillis.put(vid, now);
-                hunterCampStage.put(vid, 0);
-                continue;
-            }
 
-            long stationaryMillis = now - refMillis;
-            if (stationaryMillis >= campSeconds * 1000L) {
-                hunterCampRevealCooldownUntil.put(vid, now + cooldownSeconds * 1000L);
-                hunterCampReferenceLocations.put(vid, v.getLocation().clone());
-                hunterCampReferenceMillis.put(vid, now);
-                hunterCampStage.put(vid, 0);
+            if (dist <= campRadius * campRadius) {
+                long elapsed = (now - refTime) / 1000L;
+                if (elapsed >= campSeconds) {
+                    int newStage = stage + 1;
+                    hunterCampStage.put(vid, newStage);
+                    hunterCampRevealCooldownUntil.put(vid, now + (cooldownSeconds * 1000L));
+                    hunterCampReferenceLocations.put(vid, v.getLocation().clone());
+                    hunterCampReferenceMillis.put(vid, now);
 
-                for (UUID hid : hunters) {
-                    Player h = Bukkit.getPlayer(hid);
-                    if (h != null && h.isOnline()) {
-                        h.sendMessage(PREFIX + "§eA vampire has been camping! §f" + v.getName() + " §7is revealed briefly.");
-                        h.setCompassTarget(v.getLocation());
-                    }
+                    int revealTicks = Math.max(20, plugin.getConfig().getInt("event.hunter-tracker.camp-detection.reveal-ticks", 100));
+                    revealNearbyVampires(null, Double.MAX_VALUE, revealTicks);
+
+                    plugin.getChatManager().broadcastToParticipants("§5A vampire has been camping and revealed themselves!");
                 }
-                v.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 5 * 20, 0, false, false, false));
-                v.sendMessage(PREFIX + "§cYou have been revealed for camping!");
+            } else {
+                hunterCampReferenceLocations.put(vid, v.getLocation().clone());
+                hunterCampReferenceMillis.put(vid, now);
+                hunterCampStage.put(vid, 0);
             }
         }
     }
 
     private void savePlayerState(Player player) {
-        if (player == null) return;
+        if (player == null || !player.isOnline()) return;
         PlayerSnapshot snapshot = new PlayerSnapshot(
                 player.getLocation().clone(),
                 player.getGameMode(),
@@ -1650,15 +1648,15 @@ public class VampireHuntManager {
         player.setGameMode(snapshot.getGameMode());
         player.getInventory().setContents(snapshot.getInventoryContents());
         player.getInventory().setArmorContents(snapshot.getArmorContents());
-        player.getInventory().setItemInOffHand(snapshot.getOffHand());
+        player.getInventory().setItemInOffHand(snapshot.getOffHandItem());
 
-        double maxHealth = player.getAttribute(Attribute.MAX_HEALTH) != null
-                ? player.getAttribute(Attribute.MAX_HEALTH).getValue() : 20.0;
+        double maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null
+                ? player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue() : 20.0;
         player.setHealth(Math.min(snapshot.getHealth(), maxHealth));
         player.setFoodLevel(snapshot.getFoodLevel());
         player.setSaturation(snapshot.getSaturation());
-        player.setLevel(snapshot.getExpLevel());
-        player.setExp(snapshot.getExpProgress());
+        player.setLevel(snapshot.getLevel());
+        player.setExp(snapshot.getExp());
         player.setAllowFlight(snapshot.isAllowFlight());
         player.setFlying(snapshot.isFlying() && snapshot.isAllowFlight());
         player.setFireTicks(snapshot.getFireTicks());
@@ -1678,7 +1676,7 @@ public class VampireHuntManager {
         player.setLevel(0);
         player.setExp(0f);
         try {
-            player.setHealth(player.getAttribute(Attribute.MAX_HEALTH).getValue());
+            player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
         } catch (Exception ignored) {
             player.setHealth(20.0);
         }
@@ -1775,7 +1773,7 @@ public class VampireHuntManager {
 
     private void distributePayouts(EventWinner winner) {
         boolean enabled = plugin.getConfig().getBoolean("event.payouts.enabled", false);
-        if (!enabled || plugin.getEconomy() == null) return;
+        if (!enabled || plugin.getEconomyService() == null) return;
 
         double winnerPayout = plugin.getConfig().getDouble("event.payouts.winner", 100.0);
         double loserPayout = plugin.getConfig().getDouble("event.payouts.loser", 10.0);
@@ -1798,20 +1796,20 @@ public class VampireHuntManager {
         for (UUID playerId : winners) {
             if (!payoutEligibleActivePlayers.contains(playerId)) continue;
             OfflinePlayer op = Bukkit.getOfflinePlayer(playerId);
-            EconomyResponse response = plugin.getEconomy().depositPlayer(op, winnerPayout);
-            if (response.transactionSuccess()) plugin.getEventStatsManager().addWin(playerId, originalVampires.contains(playerId));
+            EconomyResponse response = plugin.getEconomyService().depositPlayer(op, winnerPayout);
+            if (response != null && response.transactionSuccess()) plugin.getEventStatsManager().addWin(playerId);
         }
 
         for (UUID playerId : losers) {
             if (!payoutEligibleActivePlayers.contains(playerId)) continue;
             OfflinePlayer op = Bukkit.getOfflinePlayer(playerId);
-            EconomyResponse response = plugin.getEconomy().depositPlayer(op, loserPayout);
-            if (response.transactionSuccess()) plugin.getEventStatsManager().addLoss(playerId);
+            EconomyResponse response = plugin.getEconomyService().depositPlayer(op, loserPayout);
+            if (response != null && response.transactionSuccess()) plugin.getEventStatsManager().addLoss(playerId);
         }
 
         for (UUID playerId : payoutEligibleSpectators) {
             OfflinePlayer op = Bukkit.getOfflinePlayer(playerId);
-            plugin.getEconomy().depositPlayer(op, spectatorPayout);
+            plugin.getEconomyService().depositPlayer(op, spectatorPayout);
         }
     }
 
@@ -1831,26 +1829,29 @@ public class VampireHuntManager {
         hunterCampReferenceMillis.clear();
         hunterCampStage.clear();
         hunterCampRevealCooldownUntil.clear();
+        eventEndMillis = 0L;
+        configuredDurationSeconds = 0L;
+        eventStartMillis = 0L;
+        openingRevealEndsAt = 0L;
+        suddenDeathStartMillis = 0L;
 
         if (full) {
-            queuedPlayers.clear();
-            readyPlayers.clear();
-            selectedClasses.clear();
             spectatorPlayers.clear();
             payoutEligibleSpectators.clear();
             payoutEligibleActivePlayers.clear();
-            pendingReturnTeleport.clear();
             originalVampires.clear();
             originalHunters.clear();
             savedStates.clear();
+            selectedClasses.clear();
+            pendingReturnTeleport.clear();
         }
+    }
 
-        eventEndMillis = 0L;
-        eventStartMillis = 0L;
-        configuredDurationSeconds = 0L;
-        openingRevealEndsAt = 0L;
-        readyCountdownSecondsLeft = -1;
-        suddenDeathStartMillis = 0L;
+    private void cancelAllDisconnectTasks() {
+        for (BukkitTask task : disconnectTimeoutTasks.values()) {
+            if (task != null) task.cancel();
+        }
+        disconnectTimeoutTasks.clear();
     }
 
     private void cancelDisconnectTask(UUID playerId) {
@@ -1858,13 +1859,8 @@ public class VampireHuntManager {
         if (task != null) task.cancel();
     }
 
-    private void cancelAllDisconnectTasks() {
-        disconnectTimeoutTasks.values().forEach(BukkitTask::cancel);
-        disconnectTimeoutTasks.clear();
-    }
-
     private void teleportProtected(Player player, Location location) {
-        if (player == null || location == null) return;
+        if (player == null || location == null || !player.isOnline()) return;
         protectedTeleportPlayers.add(player.getUniqueId());
         player.teleport(location, PlayerTeleportEvent.TeleportCause.PLUGIN);
     }
