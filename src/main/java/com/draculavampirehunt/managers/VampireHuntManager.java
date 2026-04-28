@@ -44,13 +44,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class VampireHuntManager {
 
-    /** Source of an admin command — used by startEventByAdmin(). */
     public enum CommandSource { PLAYER, CONSOLE }
 
     private static final String PREFIX = "§8[§4Vampire Hunt§8] §7";
 
     private final DraculaVampireHunt plugin;
-
     private final VoteManager voteManager;
 
     private final Set<UUID> queuedPlayers = ConcurrentHashMap.newKeySet();
@@ -107,17 +105,9 @@ public class VampireHuntManager {
         this.voteManager = new VoteManager(plugin);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // VoteManager
-    // ─────────────────────────────────────────────────────────────────────────
-
     public VoteManager getVoteManager() {
         return voteManager;
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Public API
-    // ─────────────────────────────────────────────────────────────────────────
 
     public boolean joinEvent(Player player) {
         if (player == null || !player.isOnline()) return false;
@@ -214,8 +204,8 @@ public class VampireHuntManager {
 
         if (phase == EventPhase.QUEUEING || phase == EventPhase.READY_CHECK) beginReadyCheckIfPossible();
 
-        if (allQueuedPlayersReady() && phase == EventPhase.READY_CHECK) {
-            plugin.getChatManager().broadcastToParticipants("§aAll players are ready.");
+        if (hasMinimumReadyPlayers() && phase == EventPhase.READY_CHECK) {
+            plugin.getChatManager().broadcastToParticipants("§aMinimum ready players reached. Starting countdown.");
             startCountdown();
         }
 
@@ -232,19 +222,16 @@ public class VampireHuntManager {
         }
 
         plugin.getChatManager().sendPrefixed(player, "§eYou are no longer ready.");
-        if (phase == EventPhase.COUNTDOWN) {
+        if (phase == EventPhase.COUNTDOWN && !hasMinimumReadyPlayers()) {
             cancelCountdown();
             phase = EventPhase.READY_CHECK;
-            plugin.getChatManager().broadcastToParticipants("§cCountdown paused because someone unreadied.");
+            readyCountdownSecondsLeft = Math.max(10, plugin.getConfig().getInt("event.ready-check.timeout-seconds", 25));
+            plugin.getChatManager().broadcastToParticipants("§cCountdown paused because ready players dropped below the minimum.");
+            beginReadyCheckIfPossible();
         }
         return true;
     }
 
-    /**
-     * Admin force-start.
-     * If the queue is empty, all online players are auto-queued.
-     * Bypasses the ready-check and starts a 3-second countdown.
-     */
     public boolean startEventByAdmin(CommandSource source) {
         if (phase == EventPhase.ACTIVE || phase == EventPhase.COUNTDOWN || phase == EventPhase.SUDDEN_DEATH) {
             return false;
@@ -271,7 +258,6 @@ public class VampireHuntManager {
         return true;
     }
 
-    /** Admin: force a player to switch to vampire team during an active event. Returns feedback message. */
     public String adminForceVampire(Player target) {
         if (target == null) return "§cTarget player is null.";
 
@@ -303,7 +289,6 @@ public class VampireHuntManager {
         return "§aForced §f" + target.getName() + " §ato vampire team.";
     }
 
-    /** Admin: force a player to switch to hunter team during an active event. Returns feedback message. */
     public String adminForceHunter(Player target) {
         if (target == null) return "§cTarget player is null.";
 
@@ -334,7 +319,6 @@ public class VampireHuntManager {
         return "§aForced §f" + target.getName() + " §ato hunter team.";
     }
 
-    /** Returns a formatted multi-line string listing all participants by role, for admin /listplayers. */
     public String getAdminPlayerListMessage() {
         StringBuilder sb = new StringBuilder();
 
@@ -552,20 +536,12 @@ public class VampireHuntManager {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Chat tag
-    // ─────────────────────────────────────────────────────────────────────────
-
     public String getRoleTag(UUID playerId) {
         if (vampires.contains(playerId)) return "§8[§5Vampire§8] ";
         if (hunters.contains(playerId)) return "§8[§bHunter§8] ";
         if (spectatorPlayers.contains(playerId)) return "§8[§7Spectator§8] ";
         return "";
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Internal helpers — combat
-    // ─────────────────────────────────────────────────────────────────────────
 
     private Player resolveAttackingPlayer(Entity damagerEntity) {
         if (damagerEntity instanceof Player player) return player;
@@ -628,10 +604,6 @@ public class VampireHuntManager {
         if (hunter.getLocation().distanceSquared(vampire.getLocation()) > threshold * threshold) return;
         hunter.playSound(hunter.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASEDRUM, 0.5f, 0.6f);
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // State queries
-    // ─────────────────────────────────────────────────────────────────────────
 
     public boolean isEventOngoing() {
         return phase == EventPhase.READY_CHECK
@@ -828,10 +800,6 @@ public class VampireHuntManager {
         if (!inv.contains(Material.COMPASS)) inv.addItem(compass);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Ready-check & countdown
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void beginReadyCheckIfPossible() {
         int minPlayers = Math.max(2, plugin.getConfig().getInt("event.min-players", 2));
         if (queuedPlayers.size() < minPlayers) return;
@@ -855,7 +823,7 @@ public class VampireHuntManager {
                     return;
                 }
 
-                if (allQueuedPlayersReady()) { cancelCountdown(); startCountdown(); return; }
+                if (hasMinimumReadyPlayers()) { cancelCountdown(); startCountdown(); return; }
 
                 if (readyCountdownSecondsLeft == 25 || readyCountdownSecondsLeft % 5 == 0 || readyCountdownSecondsLeft <= 5) {
                     for (UUID uuid : queuedPlayers) {
@@ -888,6 +856,11 @@ public class VampireHuntManager {
         return !queuedPlayers.isEmpty() && readyPlayers.containsAll(queuedPlayers);
     }
 
+    private boolean hasMinimumReadyPlayers() {
+        int minPlayers = Math.max(2, plugin.getConfig().getInt("event.min-players", 2));
+        return readyPlayers.size() >= minPlayers;
+    }
+
     private void startCountdown() {
         int seconds = Math.max(5, plugin.getConfig().getInt("event.countdown-seconds", 15));
         startCountdown(seconds);
@@ -910,8 +883,8 @@ public class VampireHuntManager {
                 return;
             }
 
-            if (plugin.getConfig().getBoolean("event.ready-check.enabled", true) && !allQueuedPlayersReady()) {
-                plugin.getChatManager().broadcastToParticipants("§cCountdown paused: not all queued players are ready.");
+            if (plugin.getConfig().getBoolean("event.ready-check.enabled", true) && !hasMinimumReadyPlayers()) {
+                plugin.getChatManager().broadcastToParticipants("§cCountdown paused: ready players dropped below the minimum.");
                 cancelCountdown();
                 phase = EventPhase.READY_CHECK;
                 readyCountdownSecondsLeft = Math.max(10, plugin.getConfig().getInt("event.ready-check.timeout-seconds", 25));
@@ -947,12 +920,8 @@ public class VampireHuntManager {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Event start / end
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void startEvent() {
-        if (queuedPlayers.size() < 2 || !plugin.getEventArenaManager().hasArenaReady()) {
+        if (readyPlayers.size() < 2 || !plugin.getEventArenaManager().hasArenaReady()) {
             phase = queuedPlayers.isEmpty() ? EventPhase.IDLE : EventPhase.QUEUEING;
             return;
         }
@@ -965,8 +934,8 @@ public class VampireHuntManager {
         phase = EventPhase.ACTIVE;
         eventStartMillis = System.currentTimeMillis();
 
-        List<UUID> participants = new ArrayList<>(queuedPlayers);
-        queuedPlayers.clear();
+        List<UUID> participants = new ArrayList<>(readyPlayers);
+        queuedPlayers.removeAll(participants);
         readyPlayers.clear();
         Collections.shuffle(participants);
 
@@ -1042,7 +1011,11 @@ public class VampireHuntManager {
                 player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 1.2f);
         }
 
-        checkWinConditions();
+        plugin.getLogger().info("Event started: active=" + activePlayers.size()
+                + ", vampires=" + vampires.size()
+                + ", hunters=" + hunters.size());
+
+        Bukkit.getScheduler().runTaskLater(plugin, this::checkWinConditions, 20L);
     }
 
     private void endEvent(EventWinner winner, boolean forced) {
@@ -1088,10 +1061,6 @@ public class VampireHuntManager {
         hardResetRuntimeState(true);
         phase = EventPhase.IDLE;
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // MVP titles
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void announceRoundMVPs() {
         UUID topVampire = null; int topVampireScore = -1;
@@ -1150,10 +1119,6 @@ public class VampireHuntManager {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Infection & role change
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void infectHunter(Player victim, Player killer) {
         UUID victimId = victim.getUniqueId();
 
@@ -1182,10 +1147,6 @@ public class VampireHuntManager {
         applyVampireKillInvisibility(killer);
         plugin.getChatManager().broadcastToParticipants("§5" + killer.getName() + " infected §f" + victim.getName() + "§5!");
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Invisibility helpers
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void applyStartInvisibility(Player vampire) {
         if (vampire == null || !vampire.isOnline()) return;
@@ -1235,10 +1196,6 @@ public class VampireHuntManager {
         plugin.getChatManager().sendPrefixed(killer, "§5You gained invisibility for §f" + seconds + "§5 seconds.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Kill recording & effects
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void recordKill(Player killer, Player victim) {
         if (killer == null || victim == null) return;
         UUID killerId = killer.getUniqueId();
@@ -1281,10 +1238,6 @@ public class VampireHuntManager {
             plugin.getChatManager().broadcastToParticipants(line);
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Elimination helpers
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void eliminateDisconnectedPlayerImmediately(Player player) {
         eliminatePlayer(player.getUniqueId(), true, true, "§cYou disconnected during the event and were eliminated.");
@@ -1374,10 +1327,6 @@ public class VampireHuntManager {
         player.sendMessage(PREFIX + "§eUse /vhunt leave to leave spectator mode, but you will lose payout eligibility.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Win conditions
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void checkWinConditions() {
         if (phase != EventPhase.ACTIVE && phase != EventPhase.SUDDEN_DEATH) return;
 
@@ -1385,10 +1334,6 @@ public class VampireHuntManager {
         if (hunters.isEmpty() && !vampires.isEmpty()) { endEvent(EventWinner.VAMPIRES, false); return; }
         if (activePlayers.isEmpty()) endEvent(EventWinner.NONE, false);
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Timer task
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void startTimerTask() {
         stopTimerTask();
@@ -1406,7 +1351,6 @@ public class VampireHuntManager {
                 if (suddenDeathEnabled && phase == EventPhase.ACTIVE) {
                     triggerSuddenDeath();
                 } else {
-                    // Time ran out — vampires win (hunters failed to kill all)
                     endEvent(EventWinner.VAMPIRES, false);
                 }
                 return;
@@ -1414,7 +1358,6 @@ public class VampireHuntManager {
 
             long remainingSeconds = remaining / 1000L;
 
-            // Sudden death warning
             if (phase == EventPhase.ACTIVE) {
                 int sdWarning = plugin.getConfig().getInt("event.sudden-death.warning-seconds", 30);
                 if (remainingSeconds == sdWarning) {
@@ -1426,7 +1369,6 @@ public class VampireHuntManager {
                 }
             }
 
-            // Hunt camp reveal check
             checkHunterCampReveals();
 
         }, 0L, 20L);
@@ -1444,7 +1386,6 @@ public class VampireHuntManager {
 
         plugin.getChatManager().broadcastToParticipants("§c§lSUDDEN DEATH! §eTimer extended by §f" + extraSeconds + "§e seconds. All vampires revealed!");
 
-        // Reveal all vampires permanently
         for (UUID id : vampires) {
             Player v = Bukkit.getPlayer(id);
             if (v != null && v.isOnline()) {
@@ -1461,10 +1402,6 @@ public class VampireHuntManager {
         startTimerTask();
         checkWinConditions();
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // BossBar
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void createBossBar(long durationSeconds) {
         removeBossBar();
@@ -1514,10 +1451,6 @@ public class VampireHuntManager {
         if (eventBossBar != null) { eventBossBar.removeAll(); eventBossBar = null; }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tracker task (compass update for hunters)
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void startTrackerTask() {
         stopTrackerTask();
         boolean enabled = plugin.getConfig().getBoolean("event.hunter-tracker.enabled", true);
@@ -1555,10 +1488,6 @@ public class VampireHuntManager {
         return nearest;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Ambiance task
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void startAmbianceTask() {
         stopAmbianceTask();
         boolean enabled = plugin.getConfig().getBoolean("event.horror.ambiance.enabled", true);
@@ -1587,10 +1516,6 @@ public class VampireHuntManager {
     private void stopAmbianceTask() {
         if (ambianceTask != null) { ambianceTask.cancel(); ambianceTask = null; }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Opening reveal
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void startOpeningReveal() {
         cancelOpeningReveal();
@@ -1621,7 +1546,6 @@ public class VampireHuntManager {
                 if (revealer.getLocation().distanceSquared(v.getLocation()) > radius * radius) continue;
             }
 
-            // Flash glowing effect
             v.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, durationTicks, 0, false, false, false));
 
             for (UUID hid : hunters) {
@@ -1630,10 +1554,6 @@ public class VampireHuntManager {
             }
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Hunter camp reveal
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void checkHunterCampReveals() {
         boolean enabled = plugin.getConfig().getBoolean("event.hunter-tracker.camp-detection.enabled", false);
@@ -1687,10 +1607,6 @@ public class VampireHuntManager {
             }
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Save / restore player state
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void savePlayerState(Player player) {
         if (player == null) return;
@@ -1763,10 +1679,6 @@ public class VampireHuntManager {
         player.setFlying(false);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Prepare player for event (gamemode, clear inv, etc.)
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void preparePlayerForEvent(Player player, boolean clearInventory) {
         if (player == null || !player.isOnline()) return;
         player.setGameMode(GameMode.SURVIVAL);
@@ -1774,10 +1686,6 @@ public class VampireHuntManager {
         player.setAllowFlight(false);
         player.setFlying(false);
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Role kit giving
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void giveRoleKit(Player player) {
         if (player == null || !player.isOnline()) return;
@@ -1856,10 +1764,6 @@ public class VampireHuntManager {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Payouts
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void distributePayouts(EventWinner winner) {
         boolean enabled = plugin.getConfig().getBoolean("event.payouts.enabled", false);
         if (!enabled || plugin.getEconomy() == null) return;
@@ -1885,15 +1789,15 @@ public class VampireHuntManager {
         for (UUID playerId : winners) {
             if (!payoutEligibleActivePlayers.contains(playerId)) continue;
             OfflinePlayer op = Bukkit.getOfflinePlayer(playerId);
-            plugin.getEconomy().depositPlayer(op, winnerPayout);
-            plugin.getEventStatsManager().addWin(playerId, isVampire(playerId));
+            EconomyResponse response = plugin.getEconomy().depositPlayer(op, winnerPayout);
+            if (response.transactionSuccess()) plugin.getEventStatsManager().addWin(playerId, originalVampires.contains(playerId));
         }
 
         for (UUID playerId : losers) {
             if (!payoutEligibleActivePlayers.contains(playerId)) continue;
             OfflinePlayer op = Bukkit.getOfflinePlayer(playerId);
-            plugin.getEconomy().depositPlayer(op, loserPayout);
-            plugin.getEventStatsManager().addLoss(playerId);
+            EconomyResponse response = plugin.getEconomy().depositPlayer(op, loserPayout);
+            if (response.transactionSuccess()) plugin.getEventStatsManager().addLoss(playerId);
         }
 
         for (UUID playerId : payoutEligibleSpectators) {
@@ -1901,10 +1805,6 @@ public class VampireHuntManager {
             plugin.getEconomy().depositPlayer(op, spectatorPayout);
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Hard reset
-    // ─────────────────────────────────────────────────────────────────────────
 
     private void hardResetRuntimeState(boolean full) {
         activePlayers.clear();
@@ -1944,10 +1844,6 @@ public class VampireHuntManager {
         suddenDeathStartMillis = 0L;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Disconnect task helpers
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void cancelDisconnectTask(UUID playerId) {
         BukkitTask task = disconnectTimeoutTasks.remove(playerId);
         if (task != null) task.cancel();
@@ -1958,19 +1854,11 @@ public class VampireHuntManager {
         disconnectTimeoutTasks.clear();
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Teleport helper
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void teleportProtected(Player player, Location location) {
         if (player == null || location == null) return;
         protectedTeleportPlayers.add(player.getUniqueId());
         player.teleport(location, PlayerTeleportEvent.TeleportCause.PLUGIN);
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Name resolution
-    // ─────────────────────────────────────────────────────────────────────────
 
     private String resolveName(UUID uuid) {
         Player online = Bukkit.getPlayer(uuid);
