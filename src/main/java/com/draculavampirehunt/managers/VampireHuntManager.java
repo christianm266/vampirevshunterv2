@@ -1,1 +1,1 @@
-$(cat /tmp/VampireHuntManager.java)
+placeholder
