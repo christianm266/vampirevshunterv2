@@ -956,33 +956,34 @@ public class VampireHuntManager {
         }
     }
 
-    private void infectHunter(Player victim, Player killer) {
-        UUID victimId = victim.getUniqueId();
-        hunters.remove(victimId);
-        vampires.add(victimId);
-        hunterCampReferenceLocations.remove(victimId);
-        hunterCampReferenceMillis.remove(victimId);
-        hunterCampStage.remove(victimId);
-        hunterCampRevealCooldownUntil.remove(victimId);
+private void infectHunter(Player victim, Player killer) {
+    UUID victimId = victim.getUniqueId();
+    hunters.remove(victimId);
+    vampires.add(victimId);
+    payoutEligibleActivePlayers.remove(victimId); // add this line
+    hunterCampReferenceLocations.remove(victimId);
+    hunterCampReferenceMillis.remove(victimId);
+    hunterCampStage.remove(victimId);
+    hunterCampRevealCooldownUntil.remove(victimId);
 
-        roundInfections.merge(killer.getUniqueId(), 1, Integer::sum);
-        plugin.getEventStatsManager().addInfection(killer.getUniqueId());
-        recordKill(killer, victim);
+    roundInfections.merge(killer.getUniqueId(), 1, Integer::sum);
+    plugin.getEventStatsManager().addInfection(killer.getUniqueId());
+    recordKill(killer, victim);
 
-        selectedClasses.put(victimId, RoleClass.VAMPIRE_STALKER);
-        preparePlayerForEvent(victim, true);
-        teleportProtected(victim, plugin.getEventArenaManager().getVampireSpawn());
-        giveRoleKit(victim);
-        applyStartInvisibility(victim);
-        applyPermanentVampireVision(victim);
+    selectedClasses.put(victimId, RoleClass.VAMPIRE_STALKER);
+    preparePlayerForEvent(victim, true);
+    teleportProtected(victim, plugin.getEventArenaManager().getVampireSpawn());
+    giveRoleKit(victim);
+    applyStartInvisibility(victim);
+    applyPermanentVampireVision(victim);
 
-        victim.sendTitle("§5INFECTED", "§7You are now a vampire", 0, 60, 10);
-        plugin.getChatManager().sendPrefixed(victim, "§5You were infected and turned into a vampire.");
+    victim.sendTitle("§5INFECTED", "§7You are now a vampire", 0, 60, 10);
+    plugin.getChatManager().sendPrefixed(victim, "§5You were infected and turned into a vampire.");
 
-        playKillEffects(killer, victim, true);
-        applyVampireKillInvisibility(killer);
-        plugin.getChatManager().broadcastToParticipants("§5" + killer.getName() + " infected §f" + victim.getName() + "§5!");
-    }
+    playKillEffects(killer, victim, true);
+    applyVampireKillInvisibility(killer);
+    plugin.getChatManager().broadcastToParticipants("§5" + killer.getName() + " infected §f" + victim.getName() + "§5!");
+}
 
     private void applyStartInvisibility(Player vampire) {
         if (vampire == null || !vampire.isOnline()) return;
@@ -1957,46 +1958,46 @@ public class VampireHuntManager {
         if (task != null) task.cancel();
     }
 
-    private void hardResetRuntimeState(boolean fullReset) {
-        activePlayers.clear();
-        vampires.clear();
-        hunters.clear();
-        spectatorPlayers.clear();
-        disconnectedPlayers.clear();
-        payoutEligibleActivePlayers.clear();
-        payoutEligibleSpectators.clear();
-        originalVampires.clear();
-        originalHunters.clear();
-        roundKills.clear();
-        roundInfections.clear();
-        roundAliveStart.clear();
-        eliminationTime.clear();
-        closestEscapeMeters.clear();
-        classAbilityCooldowns.clear();
-        hunterCampReferenceLocations.clear();
-        hunterCampReferenceMillis.clear();
-        hunterCampStage.clear();
-        hunterCampRevealCooldownUntil.clear();
-        openingRevealEndsAt = 0L;
+private void hardResetRuntimeState(boolean fullReset) {
+    activePlayers.clear();
+    vampires.clear();
+    hunters.clear();
+    spectatorPlayers.clear();
+    disconnectedPlayers.clear();
+    payoutEligibleActivePlayers.clear();
+    payoutEligibleSpectators.clear();
+    originalVampires.clear();
+    originalHunters.clear();
+    roundKills.clear();
+    roundInfections.clear();
+    roundAliveStart.clear();
+    eliminationTime.clear();
+    closestEscapeMeters.clear();
+    classAbilityCooldowns.clear();
+    hunterCampReferenceLocations.clear();
+    hunterCampReferenceMillis.clear();
+    hunterCampStage.clear();
+    hunterCampRevealCooldownUntil.clear();
+    protectedTeleportPlayers.clear(); // add this line
+    openingRevealEndsAt = 0L;
 
-        if (fullReset) {
-            queuedPlayers.clear();
-            readyPlayers.clear();
-            selectedClasses.clear();
-            pendingReturnTeleport.clear();
+    if (fullReset) {
+        queuedPlayers.clear();
+        readyPlayers.clear();
+        selectedClasses.clear();
+        pendingReturnTeleport.clear();
 
-            for (BukkitTask task : disconnectTimeoutTasks.values()) task.cancel();
-            disconnectTimeoutTasks.clear();
-            savedStates.clear();
+        for (BukkitTask task : disconnectTimeoutTasks.values()) task.cancel();
+        disconnectTimeoutTasks.clear();
+        savedStates.clear();
 
-            eventEndMillis = 0L;
-            configuredDurationSeconds = 0L;
-            eventStartMillis = 0L;
-            readyCountdownSecondsLeft = -1;
-            suddenDeathStartMillis = 0L;
-        }
+        eventEndMillis = 0L;
+        configuredDurationSeconds = 0L;
+        eventStartMillis = 0L;
+        readyCountdownSecondsLeft = -1;
+        suddenDeathStartMillis = 0L;
     }
-
+}
     public boolean adminForceVampire(UUID playerId) {
         if (!activePlayers.contains(playerId)) return false;
         hunters.remove(playerId);
