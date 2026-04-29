@@ -1043,7 +1043,7 @@ public class VampireHuntManager {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, duration * 20, speedAmp, false, false, true));
                 player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, duration * 20, resistanceAmp, false, false, true));
                 // Potion burst particles effect
-                player.getWorld().spawnParticle(Particle.SPELL_MOB, player.getLocation().add(0, 1, 0), 30, 0.3, 0.5, 0.3, 0.05);
+                player.getWorld().spawnParticle(Particle.ENTITY_EFFECT, player.getLocation().add(0, 1, 0), 30, 0.3, 0.5, 0.3, 0.05);
                 player.sendActionBar("§b✝ Holy Blessing: §fSpeed II + Resistance I for §b" + duration + "s§f!");
                 classAbilityCooldowns.put(playerId, now + (cooldown * 1000L));
                 return true;
@@ -1198,7 +1198,7 @@ public class VampireHuntManager {
         for (UUID winnerId : winners) {
             if (!isSpectatorPayoutEligible(winnerId) && !payoutEligibleActivePlayers.contains(winnerId)) continue;
             OfflinePlayer op = Bukkit.getOfflinePlayer(winnerId);
-            EconomyResponse response = plugin.getVaultEconomy().deposit(op, amount);
+            EconomyResponse response = plugin.getVaultEconomy().depositPlayer(op, amount);
             Player online = Bukkit.getPlayer(winnerId);
             if (online != null && online.isOnline()) {
                 if (response.transactionSuccess()) online.sendMessage(PREFIX + "§aYou earned §f$" + String.format("%.0f", amount) + "§a for winning the event!");
@@ -1209,23 +1209,86 @@ public class VampireHuntManager {
 
     // ── Player state helpers ──────────────────────────────────────────────────
 
-    private void savePlayerState(Player player) {
-        if (player == null || !player.isOnline()) return;
-        savedStates.put(player.getUniqueId(), PlayerSnapshot.capture(player));
+ private void savePlayerState(Player player) {
+    if (player == null || !player.isOnline()) return;
+
+    PlayerInventory inv = player.getInventory();
+    double maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null
+            ? player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue()
+            : 20.0;
+
+    savedStates.put(player.getUniqueId(), new PlayerSnapshot(
+            player.getLocation().clone(),
+            player.getGameMode(),
+            inv.getContents(),
+            inv.getArmorContents(),
+            inv.getItemInOffHand(),
+            Math.min(player.getHealth(), maxHealth),
+            player.getFoodLevel(),
+            player.getSaturation(),
+            player.getActivePotionEffects(),
+            player.getLevel(),
+            player.getExp(),
+            player.getAllowFlight(),
+            player.isFlying(),
+            player.getFireTicks()
+    ));
+}
+
+private void restorePlayer(Player player) {
+    if (player == null || !player.isOnline()) return;
+
+    UUID playerId = player.getUniqueId();
+    PlayerSnapshot snapshot = savedStates.remove(playerId);
+
+    if (snapshot == null) {
+        player.getInventory().clear();
+        player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+        if (player.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+            player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
+        }
+        player.setFoodLevel(20);
+        player.setSaturation(5.0f);
+        player.setExp(0f);
+        player.setLevel(0);
+        player.setGameMode(GameMode.SURVIVAL);
+        player.setAllowFlight(false);
+        player.setFlying(false);
+        player.setFireTicks(0);
+        return;
     }
 
-    private void restorePlayer(Player player) {
-        if (player == null) return;
-        UUID playerId = player.getUniqueId();
-        PlayerSnapshot snapshot = savedStates.remove(playerId);
-        if (snapshot != null && player.isOnline()) { snapshot.restore(player); return; }
-        if (player.isOnline()) {
-            player.getInventory().clear(); player.getActivePotionEffects().forEach(e -> player.removePotionEffect(e.getType()));
-            player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
-            player.setFoodLevel(20); player.setExp(0); player.setLevel(0);
-            player.setGameMode(GameMode.SURVIVAL); player.setAllowFlight(false); player.setFlying(false);
-        }
+    PlayerInventory inv = player.getInventory();
+    inv.clear();
+    inv.setContents(snapshot.getInventoryContents());
+    inv.setArmorContents(snapshot.getArmorContents());
+    inv.setItemInOffHand(snapshot.getOffHandItem());
+
+    player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+    for (PotionEffect effect : snapshot.getPotionEffects()) {
+        player.addPotionEffect(effect);
     }
+
+    player.setGameMode(snapshot.getGameMode());
+
+    double maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null
+            ? player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue()
+            : 20.0;
+    player.setHealth(Math.max(0.1, Math.min(snapshot.getHealth(), maxHealth)));
+
+    player.setFoodLevel(snapshot.getFoodLevel());
+    player.setSaturation(snapshot.getSaturation());
+    player.setLevel(snapshot.getLevel());
+    player.setExp(snapshot.getExp());
+    player.setAllowFlight(snapshot.isAllowFlight());
+    player.setFlying(snapshot.isFlying());
+    player.setFireTicks(snapshot.getFireTicks());
+
+    Location loc = snapshot.getLocation();
+    if (loc != null && loc.getWorld() != null) {
+        teleportProtected(player, loc);
+    }
+}
 
     private void preparePlayerForEvent(Player player, boolean clearInventory) {
         if (player == null || !player.isOnline()) return;

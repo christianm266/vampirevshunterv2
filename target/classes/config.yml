@@ -70,6 +70,13 @@ event:
       amplifier: 0
       slowness-seconds: 1
 
+    heartbeat:
+      enabled: true
+
+    threat-titles:
+      enabled: true
+      proximity-radius: 12.0
+
     ambient:
       enabled: true
       interval-ticks: 100
@@ -91,15 +98,38 @@ event:
         enabled: true
         required-best-win-streak: 3
 
+  # ── Classes & Auto-Abilities ─────────────────────────────────────────────
   classes:
+
     vampire-stalker:
       bonus-invisibility-seconds: 15
+      auto-ability:
+        cooldown-seconds: 30
+        range: 40.0
+        glow-seconds: 10
+
     vampire-brute:
       enabled: true
+      auto-ability:
+        cooldown-seconds: 40
+        duration-seconds: 8
+        strength-amplifier: 1    # 1 = Strength II
+        speed-amplifier: 0       # 0 = Speed I
+
     hunter-tracker:
       bonus-radius: 20.0
+      auto-ability:
+        cooldown-seconds: 30
+        range: 40.0
+        glow-seconds: 10
+
     hunter-priest:
       enabled: true
+      auto-ability:
+        cooldown-seconds: 35
+        duration-seconds: 8
+        speed-amplifier: 1       # 1 = Speed II
+        resistance-amplifier: 0  # 0 = Resistance I
 
   kill-effects:
     red-particles: true
@@ -107,10 +137,35 @@ event:
     lightning-visual: true
     special-broadcast: true
 
+  # ── Hunter Directional HUD ───────────────────────────────────────────────
   hunter-tracker:
     enabled: true
     interval-ticks: 10
     radius: 30.0
+
+  # ── Vampire Blood Sense HUD ──────────────────────────────────────────────
+  vampire-tracking:
+    opening-reveal:
+      enabled: true
+      glow-all-hunters: true
+      duration-seconds: 1
+
+    blood-scent:
+      enabled: true
+      cooldown-seconds: 20
+      duration-seconds: 7
+      radius: 150.0
+      use-compass: false        # Compass disabled — HUD only
+      use-actionbar: true       # Directional HUD via actionbar
+
+    anti-camp:
+      enabled: true
+      no-move-seconds: 10
+      required-movement-blocks: 12.0
+      glow-seconds: 3
+      reveal-cooldown-seconds: 20
+      use-bossbar-alert: true
+      damage-final-stage: true
 
   hunter-bow:
     enabled: true
@@ -143,29 +198,6 @@ event:
         notify-hunter: true
         notify-vampire: false
 
-  vampire-tracking:
-    opening-reveal:
-      enabled: true
-      glow-all-hunters: true
-      duration-seconds: 1
-
-    blood-scent:
-      enabled: true
-      cooldown-seconds: 20
-      duration-seconds: 7
-      radius: 150.0
-      use-compass: true
-      use-actionbar: true
-
-    anti-camp:
-      enabled: true
-      no-move-seconds: 10
-      required-movement-blocks: 12.0
-      glow-seconds: 3
-      reveal-cooldown-seconds: 20
-      use-bossbar-alert: true
-      damage-final-stage: true
-
   vote-modifiers:
     vote-duration-seconds: 30
     double-vampires:
@@ -195,6 +227,11 @@ event:
         chestplate: LEATHER_CHESTPLATE
         leggings: LEATHER_LEGGINGS
         boots: LEATHER_BOOTS
+      # Armor dye color for leather (0–255 per channel)
+      armor-color:
+        red: 0
+        green: 0
+        blue: 0       # Pure black
 
       offhand: TOTEM_OF_UNDYING
 
@@ -223,8 +260,8 @@ event:
         0: IRON_SWORD:1
         1: BOW:1
         2: ARROW:24
-        3: COMPASS:1
-        4: COOKED_BEEF:16
+        3: COOKED_BEEF:16
+        # Slot 3 previously had COMPASS:1 — removed, tracker is HUD-only now
 
       effects:
         SPEED:
