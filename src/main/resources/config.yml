@@ -185,9 +185,6 @@ event:
       display-name: "Fog of War"
       description: "Vampires opening reveal is skipped — hunters start blind."
 
-  # ── Kits ──────────────────────────────────────────────────────────────────
-  # Use plain material names only (no Bukkit serialization blocks).
-  # All names must be valid 1.13+ Material enum values.
   kits:
     vampire:
       armor:
