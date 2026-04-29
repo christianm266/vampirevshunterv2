@@ -146,8 +146,8 @@ event:
   # ── Vampire Blood Sense HUD ──────────────────────────────────────────────
   vampire-tracking:
     opening-reveal:
-      enabled: true
-      glow-all-hunters: true
+      enabled: false          # Fog of War is default — no opening reveal
+      glow-all-hunters: false
       duration-seconds: 1
 
     blood-scent:
@@ -180,7 +180,7 @@ event:
   vampire:
     start-invisibility:
       enabled: true
-      seconds: 60
+      seconds: 15              # Base invisibility; stalker gets +15 via bonus-invisibility-seconds
 
     invisibility-on-kill: true
     invisibility-seconds: 30
@@ -263,13 +263,8 @@ event:
         3: COOKED_BEEF:16
         # Slot 3 previously had COMPASS:1 — removed, tracker is HUD-only now
 
-      effects:
-        SPEED:
-          amplifier: 0
-          duration-seconds: 999999
-          ambient: false
-          particles: false
-          icon: true
+      effects: {}
+      # SPEED removed — hunters receive no permanent potion effects by design
 
 arena:
   lobby:
