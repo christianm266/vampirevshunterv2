@@ -364,7 +364,8 @@ public class VampireHuntManager {
         if (spectatorPlayers.contains(playerId)) return "§8[§7Spectator§8] ";
         return "";
     }
-	    // ── Internal helpers ──────────────────────────────────────────────────────
+
+    // ── Internal helpers ──────────────────────────────────────────────────────
 
     private Player resolveAttackingPlayer(Entity damagerEntity) {
         if (damagerEntity instanceof Player player) return player;
@@ -457,6 +458,7 @@ public class VampireHuntManager {
         return true;
     }
 
+    // useClassAbility kept for any manual triggers still wired, but auto-abilities now fire via tracker task
     public boolean useClassAbility(Player player) {
         if (player == null || !activePlayers.contains(player.getUniqueId())) return false;
         UUID playerId = player.getUniqueId();
@@ -468,36 +470,7 @@ public class VampireHuntManager {
             long seconds = Math.max(1L, (cooldownUntil - now) / 1000L);
             plugin.getChatManager().sendPrefixed(player, "§eAbility on cooldown for §f" + seconds + "§e more seconds."); return false;
         }
-        switch (roleClass) {
-            case HUNTER_PRIEST -> {
-                if (!isHunter(playerId)) { plugin.getChatManager().sendPrefixed(player, "§cOnly hunters can use this class ability."); return false; }
-                revealNearbyVampires(player, 28.0D, 4);
-                player.sendTitle("§bHoly Reveal", "§7Nearby vampires exposed", 0, 30, 10);
-                classAbilityCooldowns.put(playerId, now + 35000L); return true;
-            }
-            case HUNTER_TRACKER -> {
-                if (!isHunter(playerId)) { plugin.getChatManager().sendPrefixed(player, "§cOnly hunters can use this class ability."); return false; }
-                Player nearest = findNearestVisibleVampire(player, 80.0D);
-                if (nearest == null) { plugin.getChatManager().sendPrefixed(player, "§eNo vampire detected."); classAbilityCooldowns.put(playerId, now + 10000L); return true; }
-                player.setCompassTarget(nearest.getLocation());
-                player.sendTitle("§bTracker Pulse", "§f" + nearest.getName() + " located", 0, 30, 10);
-                classAbilityCooldowns.put(playerId, now + 15000L); return true;
-            }
-            case VAMPIRE_STALKER -> {
-                if (!isVampire(playerId)) { plugin.getChatManager().sendPrefixed(player, "§cOnly vampires can use this class ability."); return false; }
-                player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10 * 20, 0, false, false, false));
-                player.sendTitle("§5Stalker Veil", "§7You vanish into the dark", 0, 30, 10);
-                classAbilityCooldowns.put(playerId, now + 30000L); return true;
-            }
-            case VAMPIRE_BRUTE -> {
-                if (!isVampire(playerId)) { plugin.getChatManager().sendPrefixed(player, "§cOnly vampires can use this class ability."); return false; }
-                player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 8 * 20, 0, false, false, true));
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 8 * 20, 0, false, false, true));
-                player.sendTitle("§4Brute Rage", "§7Power over speed", 0, 30, 10);
-                classAbilityCooldowns.put(playerId, now + 40000L); return true;
-            }
-            default -> { return false; }
-        }
+        return fireAutoAbility(player, roleClass, now);
     }
 
     public Player getNextSpectatorTarget(Player spectator, boolean vampiresOnly, boolean huntersOnly) {
@@ -543,18 +516,8 @@ public class VampireHuntManager {
         if (player == null || !player.isOnline()) return;
         boolean enabled = plugin.getConfig().getBoolean("event.hunter-tracker.enabled", true);
         if (!enabled || !isHunter(player.getUniqueId())) return;
-        ItemStack compass = new ItemStack(Material.COMPASS);
-        CompassMeta meta = (CompassMeta) compass.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName("§bVampire Tracker");
-            List<String> lore = new ArrayList<>();
-            lore.add("§7Tracks the nearest vampire.");
-            if (getSelectedClass(player.getUniqueId()) == RoleClass.HUNTER_TRACKER) lore.add("§bTracker Class: enhanced tracking.");
-            meta.setLore(lore);
-            compass.setItemMeta(meta);
-        }
-        PlayerInventory inv = player.getInventory();
-        if (!inv.contains(Material.COMPASS)) inv.addItem(compass);
+        // Tracker is HUD-only now — no compass item needed per design spec.
+        // Compass giving is skipped intentionally; HUD actionbar handles direction.
     }
 
     // ── Ready-check & countdown ───────────────────────────────────────────────
@@ -662,7 +625,7 @@ public class VampireHuntManager {
                 hunters.add(playerId); originalHunters.add(playerId); defaultClassIfMissing(playerId, false);
                 teleportProtected(player, plugin.getEventArenaManager().getHunterSpawn());
                 giveRoleKit(player);
-                if (modifier != VoteManager.RoundModifier.NO_COMPASS) giveTracker(player);
+                // No compass item — tracker is HUD-only
                 player.sendTitle("§bHUNTER", "§7Kill all vampires", 0, 60, 10);
                 hunterCampReferenceLocations.put(playerId, player.getLocation().clone());
                 hunterCampReferenceMillis.put(playerId, System.currentTimeMillis());
@@ -768,7 +731,7 @@ public class VampireHuntManager {
         int seconds = Math.max(1, plugin.getConfig().getInt("event.vampire.start-invisibility.seconds", 60));
         if (getSelectedClass(vampire.getUniqueId()) == RoleClass.VAMPIRE_STALKER) seconds += Math.max(5, plugin.getConfig().getInt("event.classes.vampire-stalker.bonus-invisibility-seconds", 15));
         vampire.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, seconds * 20, 0, false, false, false));
-        plugin.getChatManager().sendPrefixed(vampire, "§5You are invisible for the first §f" + seconds + "§5 seconds. Dark armor is recommended because vanilla armor can still be seen.");
+        plugin.getChatManager().sendPrefixed(vampire, "§5You are invisible for the first §f" + seconds + "§5 seconds.");
     }
 
     private void applyPermanentVampireVision(Player vampire) {
@@ -874,9 +837,9 @@ public class VampireHuntManager {
         if (eventBossBar != null) eventBossBar.addPlayer(player);
         player.sendTitle("§7ELIMINATED", "§fYou are now spectating", 0, 50, 10);
         player.sendMessage(PREFIX + "§7You are now spectating above the arena.");
-        player.sendMessage(PREFIX + "§eUse /vhunt specteleport next, /vhunt specteleport hunters, or /vhunt specteleport vampires.");
+        player.sendMessage(PREFIX + "§eUse /vhunt specteleport next, hunters, or vampires.");
         player.sendMessage(PREFIX + "§eUse /vhunt teams to see live counts.");
-        player.sendMessage(PREFIX + "§eUse /vhunt leave to leave spectator mode, but you will lose payout eligibility.");
+        player.sendMessage(PREFIX + "§eUse /vhunt leave to leave spectator (loses payout eligibility).");
     }
 
     private void checkWinConditions() {
@@ -928,13 +891,190 @@ public class VampireHuntManager {
         for (UUID uuid : spectatorPlayers) { Player p = Bukkit.getPlayer(uuid); if (p != null && p.isOnline()) eventBossBar.addPlayer(p); }
     }
 
+    // ── Tracker task — HUD + Auto-Abilities ───────────────────────────────────
+
     private void startTrackerTask() {
         stopTrackerTask();
         int intervalTicks = Math.max(10, plugin.getConfig().getInt("event.tracking.tick-interval", 20));
         trackerTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             if (phase != EventPhase.ACTIVE && phase != EventPhase.SUDDEN_DEATH) return;
-            runHunterTracker(); runVampireBloodScent(); runAntiCampCheck();
+            runHunterDirectionHUD();
+            runVampireDirectionHUD();
+            runAutoAbilities();
+            runAntiCampCheck();
         }, intervalTicks, intervalTicks);
+    }
+
+    // ── Directional HUD helpers ───────────────────────────────────────────────
+
+    /**
+     * Calculates the horizontal direction label (◀ LEFT, ▶ RIGHT, ▲ CENTER)
+     * from viewer's yaw to the target's location.
+     */
+    private String getDirectionLabel(Player viewer, Location target) {
+        // Vector from viewer to target on the XZ plane
+        double dx = target.getX() - viewer.getLocation().getX();
+        double dz = target.getZ() - viewer.getLocation().getZ();
+
+        // Angle of target relative to world north (atan2 in Minecraft: yaw 0 = south, -90 = east)
+        double targetAngle = Math.toDegrees(Math.atan2(-dx, dz)); // world-space angle
+
+        // Player facing angle (Minecraft yaw: 0=south, -90=east, 90=west, ±180=north)
+        float playerYaw = viewer.getLocation().getYaw();
+
+        // Relative angle: how far right (+) or left (-) the target is from where player is looking
+        double relative = targetAngle - playerYaw;
+
+        // Normalize to [-180, 180]
+        while (relative > 180) relative -= 360;
+        while (relative < -180) relative += 360;
+
+        if (relative >= -30 && relative <= 30) return "§a▲ CENTER";
+        if (relative > 30) return "§e▶ RIGHT";
+        return "§e◀ LEFT";
+    }
+
+    private void runHunterDirectionHUD() {
+        boolean enabled = plugin.getConfig().getBoolean("event.hunter-tracker.enabled", true);
+        if (!enabled) return;
+        double radius = plugin.getConfig().getDouble("event.hunter-tracker.radius", 30.0D);
+        for (UUID hunterId : new HashSet<>(hunters)) {
+            Player hunter = Bukkit.getPlayer(hunterId);
+            if (hunter == null || !hunter.isOnline()) continue;
+            Player nearest = findNearestActivePlayer(hunter, vampires, radius);
+            if (nearest == null) {
+                hunter.sendActionBar("§bVampire Sense §8| §7No vampires within " + (int) radius + " blocks");
+            } else {
+                int dist = (int) hunter.getLocation().distance(nearest.getLocation());
+                String dir = getDirectionLabel(hunter, nearest.getLocation());
+                hunter.sendActionBar("§bVampire Sense §8| " + dir + " §8| §c" + dist + " blocks");
+            }
+        }
+    }
+
+    private void runVampireDirectionHUD() {
+        boolean enabled = plugin.getConfig().getBoolean("event.vampire-tracking.blood-scent.use-actionbar", true);
+        if (!enabled) return;
+        double radius = plugin.getConfig().getDouble("event.hunter-tracker.radius", 30.0D);
+        for (UUID vampireId : new HashSet<>(vampires)) {
+            Player vampire = Bukkit.getPlayer(vampireId);
+            if (vampire == null || !vampire.isOnline()) continue;
+            Player nearest = findNearestActivePlayer(vampire, hunters, radius);
+            if (nearest == null) {
+                vampire.sendActionBar("§4❤ §cBlood Sense §8| §7No prey within " + (int) radius + " blocks");
+            } else {
+                int dist = (int) vampire.getLocation().distance(nearest.getLocation());
+                String dir = getDirectionLabel(vampire, nearest.getLocation());
+                vampire.sendActionBar("§4❤ §cBlood Sense §8| " + dir + " §8| §f" + dist + " blocks §4❤");
+            }
+        }
+    }
+
+    // ── Auto-Abilities ────────────────────────────────────────────────────────
+
+    private void runAutoAbilities() {
+        long now = System.currentTimeMillis();
+        for (UUID playerId : new HashSet<>(activePlayers)) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player == null || !player.isOnline()) continue;
+            RoleClass roleClass = getSelectedClass(playerId);
+            if (roleClass == RoleClass.NONE) continue;
+            long cooldownUntil = classAbilityCooldowns.getOrDefault(playerId, 0L);
+            if (now < cooldownUntil) continue;
+            fireAutoAbility(player, roleClass, now);
+        }
+    }
+
+    /**
+     * Fires the auto-ability for the given class. Used both by the scheduler
+     * and by the manual useClassAbility() call.
+     */
+    private boolean fireAutoAbility(Player player, RoleClass roleClass, long now) {
+        UUID playerId = player.getUniqueId();
+        switch (roleClass) {
+
+            case VAMPIRE_STALKER -> {
+                if (!isVampire(playerId)) return false;
+                int cooldown = plugin.getConfig().getInt("event.classes.vampire-stalker.auto-ability.cooldown-seconds", 30);
+                double range = plugin.getConfig().getDouble("event.classes.vampire-stalker.auto-ability.range", 40.0D);
+                int glowSeconds = plugin.getConfig().getInt("event.classes.vampire-stalker.auto-ability.glow-seconds", 10);
+                Player target = findNearestActivePlayer(player, hunters, range);
+                if (target != null) {
+                    target.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, glowSeconds * 20, 0, false, false, false));
+                    player.sendActionBar("§5👁 Stalker: §f" + target.getName() + " §5revealed through walls!");
+                }
+                classAbilityCooldowns.put(playerId, now + (cooldown * 1000L));
+                return true;
+            }
+
+            case VAMPIRE_BRUTE -> {
+                if (!isVampire(playerId)) return false;
+                int cooldown = plugin.getConfig().getInt("event.classes.vampire-brute.auto-ability.cooldown-seconds", 40);
+                int duration = plugin.getConfig().getInt("event.classes.vampire-brute.auto-ability.duration-seconds", 8);
+                int strengthAmp = plugin.getConfig().getInt("event.classes.vampire-brute.auto-ability.strength-amplifier", 1); // II = amplifier 1
+                int speedAmp = plugin.getConfig().getInt("event.classes.vampire-brute.auto-ability.speed-amplifier", 0);     // I = amplifier 0
+                player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, duration * 20, strengthAmp, false, false, true));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, duration * 20, speedAmp, false, false, true));
+                player.sendActionBar("§4💪 Brute Rage: §fStrength II + Speed I for §c" + duration + "s§f!");
+                classAbilityCooldowns.put(playerId, now + (cooldown * 1000L));
+                return true;
+            }
+
+            case HUNTER_TRACKER -> {
+                if (!isHunter(playerId)) return false;
+                int cooldown = plugin.getConfig().getInt("event.classes.hunter-tracker.auto-ability.cooldown-seconds", 30);
+                double range = plugin.getConfig().getDouble("event.classes.hunter-tracker.auto-ability.range", 40.0D);
+                int glowSeconds = plugin.getConfig().getInt("event.classes.hunter-tracker.auto-ability.glow-seconds", 10);
+                Player target = findNearestActivePlayer(player, vampires, range);
+                if (target != null) {
+                    target.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, glowSeconds * 20, 0, false, false, false));
+                    player.sendActionBar("§b🎯 Tracker: §f" + target.getName() + " §bmarked through walls!");
+                }
+                classAbilityCooldowns.put(playerId, now + (cooldown * 1000L));
+                return true;
+            }
+
+            case HUNTER_PRIEST -> {
+                if (!isHunter(playerId)) return false;
+                int cooldown = plugin.getConfig().getInt("event.classes.hunter-priest.auto-ability.cooldown-seconds", 35);
+                int duration = plugin.getConfig().getInt("event.classes.hunter-priest.auto-ability.duration-seconds", 8);
+                int speedAmp = plugin.getConfig().getInt("event.classes.hunter-priest.auto-ability.speed-amplifier", 1);       // II = amplifier 1
+                int resistanceAmp = plugin.getConfig().getInt("event.classes.hunter-priest.auto-ability.resistance-amplifier", 0); // I = amplifier 0
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, duration * 20, speedAmp, false, false, true));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, duration * 20, resistanceAmp, false, false, true));
+                // Potion burst particles effect
+                player.getWorld().spawnParticle(Particle.SPELL_MOB, player.getLocation().add(0, 1, 0), 30, 0.3, 0.5, 0.3, 0.05);
+                player.sendActionBar("§b✝ Holy Blessing: §fSpeed II + Resistance I for §b" + duration + "s§f!");
+                classAbilityCooldowns.put(playerId, now + (cooldown * 1000L));
+                return true;
+            }
+
+            default -> { return false; }
+        }
+    }
+
+    // ── Tracker helper ────────────────────────────────────────────────────────
+
+    /**
+     * Finds the nearest online active player from a given set within maxRadius.
+     */
+    private Player findNearestActivePlayer(Player from, Set<UUID> candidateSet, double maxRadius) {
+        if (from == null || !from.isOnline()) return null;
+        Player nearest = null;
+        double nearestDistSq = maxRadius * maxRadius;
+        for (UUID id : new HashSet<>(candidateSet)) {
+            Player candidate = Bukkit.getPlayer(id);
+            if (candidate == null || !candidate.isOnline()) continue;
+            if (!from.getWorld().equals(candidate.getWorld())) continue;
+            double distSq = from.getLocation().distanceSquared(candidate.getLocation());
+            if (distSq < nearestDistSq) { nearestDistSq = distSq; nearest = candidate; }
+        }
+        return nearest;
+    }
+
+    // keep old method name for internal calls that still reference it
+    private Player findNearestVisibleVampire(Player hunter, double maxRadius) {
+        return findNearestActivePlayer(hunter, vampires, maxRadius);
     }
 
     private void startAmbianceTask() {
@@ -980,47 +1120,6 @@ public class VampireHuntManager {
         hunter.playSound(hunter.getLocation(), Sound.BLOCK_CONDUIT_AMBIENT, 0.9f, 1.0f);
     }
 
-    private void runVampireBloodScent() {
-        boolean enabled = plugin.getConfig().getBoolean("event.vampire.blood-scent.enabled", true);
-        if (!enabled) return;
-        double scentRadius = Math.max(1.0D, plugin.getConfig().getDouble("event.vampire.blood-scent.radius", 20.0D));
-        for (UUID vampireId : new HashSet<>(vampires)) {
-            Player vampire = Bukkit.getPlayer(vampireId); if (vampire == null || !vampire.isOnline()) continue;
-            boolean hunterNearby = false;
-            for (UUID hunterId : new HashSet<>(hunters)) {
-                Player hunter = Bukkit.getPlayer(hunterId); if (hunter == null || !hunter.isOnline()) continue;
-                if (vampire.getWorld().equals(hunter.getWorld()) && vampire.getLocation().distanceSquared(hunter.getLocation()) <= scentRadius * scentRadius) { hunterNearby = true; break; }
-            }
-            if (hunterNearby) {
-                vampire.playSound(vampire.getLocation(), Sound.BLOCK_CONDUIT_AMBIENT, 0.7f, 0.5f);
-                boolean useActionbar = plugin.getConfig().getBoolean("event.vampire-tracking.blood-scent.use-actionbar", true);
-                if (useActionbar) vampire.sendActionBar("§4❤ §cBlood is nearby... §4❤");
-            }
-        }
-    }
-
-    private void runHunterTracker() {
-        boolean enabled = plugin.getConfig().getBoolean("event.hunter-tracker.enabled", true);
-        if (!enabled) return;
-        for (UUID hunterId : new HashSet<>(hunters)) {
-            Player hunter = Bukkit.getPlayer(hunterId); if (hunter == null || !hunter.isOnline()) continue;
-            if (!hunter.getInventory().contains(Material.COMPASS)) continue;
-            Player nearest = findNearestVisibleVampire(hunter, plugin.getConfig().getDouble("event.hunter-tracker.radius", 30.0D));
-            if (nearest != null) hunter.setCompassTarget(nearest.getLocation());
-            sendHunterHUDTracker(hunter, nearest);
-        }
-    }
-
-    private void sendHunterHUDTracker(Player hunter, Player nearestVampire) {
-        if (hunter == null || !hunter.isOnline()) return;
-        if (nearestVampire == null) {
-            hunter.sendActionBar("§bVampire Tracker §8| §7No vampires in range");
-            return;
-        }
-        double dist = hunter.getLocation().distance(nearestVampire.getLocation());
-        hunter.sendActionBar("§bVampire Tracker §8| §c" + nearestVampire.getName() + " §8- §f" + (int) dist + "m away");
-    }
-
     private void runAntiCampCheck() {
         boolean enabled = plugin.getConfig().getBoolean("event.vampire-tracking.anti-camp.enabled", true);
         if (!enabled) return;
@@ -1052,18 +1151,6 @@ public class VampireHuntManager {
             hunterCampRevealCooldownUntil.put(hunterId, now + revealCooldownMs);
             hunterCampStage.merge(hunterId, 1, Integer::sum);
         }
-    }
-
-    private Player findNearestVisibleVampire(Player hunter, double maxRadius) {
-        if (hunter == null || !hunter.isOnline()) return null;
-        Player nearest = null; double nearestDistSq = maxRadius * maxRadius;
-        for (UUID vampireId : new HashSet<>(vampires)) {
-            Player vampire = Bukkit.getPlayer(vampireId); if (vampire == null || !vampire.isOnline()) continue;
-            if (!hunter.getWorld().equals(vampire.getWorld())) continue;
-            double distSq = hunter.getLocation().distanceSquared(vampire.getLocation());
-            if (distSq < nearestDistSq) { nearestDistSq = distSq; nearest = vampire; }
-        }
-        return nearest;
     }
 
     private void revealNearbyVampires(Player hunter, double radius, int durationSeconds) {
@@ -1166,22 +1253,22 @@ public class VampireHuntManager {
         PlayerInventory inv = player.getInventory();
         inv.clear();
 
-        // Armor
+        // ── Armor ─────────────────────────────────────────────────────────────
         ConfigurationSection armorSection = kitSection.getConfigurationSection("armor");
         if (armorSection != null) {
-            applyArmorPiece(inv, armorSection, "helmet", isVampire);
-            applyArmorPiece(inv, armorSection, "chestplate", isVampire);
-            applyArmorPiece(inv, armorSection, "leggings", isVampire);
-            applyArmorPiece(inv, armorSection, "boots", isVampire);
+            applyArmorPiece(inv, armorSection, "helmet");
+            applyArmorPiece(inv, armorSection, "chestplate");
+            applyArmorPiece(inv, armorSection, "leggings");
+            applyArmorPiece(inv, armorSection, "boots");
         }
 
-        // Offhand
+        // ── Offhand ───────────────────────────────────────────────────────────
         String offhandStr = kitSection.getString("offhand");
         if (offhandStr != null && !offhandStr.equalsIgnoreCase("null") && !offhandStr.isBlank()) {
             try { inv.setItemInOffHand(new ItemStack(Material.valueOf(offhandStr.toUpperCase(Locale.ROOT)))); } catch (IllegalArgumentException ignored) {}
         }
 
-        // Slots
+        // ── Slots ─────────────────────────────────────────────────────────────
         ConfigurationSection slotsSection = kitSection.getConfigurationSection("slots");
         if (slotsSection != null) {
             for (String key : slotsSection.getKeys(false)) {
@@ -1195,7 +1282,7 @@ public class VampireHuntManager {
             }
         }
 
-        // Potion effects
+        // ── Potion effects ────────────────────────────────────────────────────
         ConfigurationSection effectsSection = kitSection.getConfigurationSection("effects");
         if (effectsSection != null) {
             for (String effectName : effectsSection.getKeys(false)) {
@@ -1214,37 +1301,43 @@ public class VampireHuntManager {
             }
         }
 
-        // Vampire: dye leather armor black
+        // ── Vampire: dye leather armor pure black RGB(0,0,0) ─────────────────
         if (isVampire) dyeLeatherArmorBlack(player);
     }
 
-    private void applyArmorPiece(PlayerInventory inv, ConfigurationSection armorSection, String pieceKey, boolean isVampire) {
+    private void applyArmorPiece(PlayerInventory inv, ConfigurationSection armorSection, String pieceKey) {
         String materialName = armorSection.getString(pieceKey);
         if (materialName == null || materialName.equalsIgnoreCase("null") || materialName.isBlank()) return;
         try {
             Material mat = Material.valueOf(materialName.toUpperCase(Locale.ROOT));
             ItemStack piece = new ItemStack(mat);
             switch (pieceKey.toLowerCase(Locale.ROOT)) {
-                case "helmet" -> inv.setHelmet(piece);
+                case "helmet"     -> inv.setHelmet(piece);
                 case "chestplate" -> inv.setChestplate(piece);
-                case "leggings" -> inv.setLeggings(piece);
-                case "boots" -> inv.setBoots(piece);
+                case "leggings"   -> inv.setLeggings(piece);
+                case "boots"      -> inv.setBoots(piece);
             }
         } catch (IllegalArgumentException ignored) {}
     }
 
+    /**
+     * Dyes all leather armor pieces on the player pure black: RGB(0, 0, 0).
+     */
     private void dyeLeatherArmorBlack(Player player) {
         if (player == null || !player.isOnline()) return;
         PlayerInventory inv = player.getInventory();
-        ItemStack[] armorSlots = {inv.getHelmet(), inv.getChestplate(), inv.getLeggings(), inv.getBoots()};
-        for (ItemStack piece : armorSlots) {
+        ItemStack[] slots = {inv.getHelmet(), inv.getChestplate(), inv.getLeggings(), inv.getBoots()};
+        for (ItemStack piece : slots) {
             if (piece == null) continue;
             if (piece.getItemMeta() instanceof org.bukkit.inventory.meta.LeatherArmorMeta meta) {
-                meta.setColor(Color.BLACK);
+                meta.setColor(Color.fromRGB(0, 0, 0));
                 piece.setItemMeta(meta);
             }
         }
-        inv.setHelmet(armorSlots[0]); inv.setChestplate(armorSlots[1]); inv.setLeggings(armorSlots[2]); inv.setBoots(armorSlots[3]);
+        inv.setHelmet(slots[0]);
+        inv.setChestplate(slots[1]);
+        inv.setLeggings(slots[2]);
+        inv.setBoots(slots[3]);
     }
 
     private void defaultClassIfMissing(UUID playerId, boolean isVampire) {
@@ -1321,7 +1414,7 @@ public class VampireHuntManager {
         if (!activePlayers.contains(playerId)) return false;
         vampires.remove(playerId); hunters.add(playerId);
         Player player = Bukkit.getPlayer(playerId);
-        if (player != null && player.isOnline()) { giveRoleKit(player); giveTracker(player); player.sendTitle("§bROLE CHANGED", "§7You are now a hunter", 0, 40, 10); }
+        if (player != null && player.isOnline()) { giveRoleKit(player); player.sendTitle("§bROLE CHANGED", "§7You are now a hunter", 0, 40, 10); }
         return true;
     }
 
