@@ -129,7 +129,7 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
                     chat.sendPrefixed(sender, "\u00a7cPlayer \u00a7f" + args[1] + " \u00a7cis not online.");
                     return true;
                 }
-                chat.sendPrefixed(sender, manager.adminForceVampire(target));
+                chat.sendPrefixed(sender, manager.adminForceVampire(target.getUniqueId()) ? "§aPlayer set as vampire." : "§cCould not set player as vampire.");
             }
 
             case "removevampire" -> {
@@ -142,7 +142,7 @@ public class VampireHuntAdminCommand implements CommandExecutor, TabCompleter {
                     chat.sendPrefixed(sender, "\u00a7cPlayer \u00a7f" + args[1] + " \u00a7cis not online.");
                     return true;
                 }
-                chat.sendPrefixed(sender, manager.adminForceHunter(target));
+                chat.sendPrefixed(sender, manager.adminForceHunter(target.getUniqueId()) ? "§aPlayer set as hunter." : "§cCould not set player as hunter.");
             }
 
             case "addplayer" -> {
